@@ -9,30 +9,7 @@
 #include <comdef.h>
 
 #include "recordingdevice.h"
-
-#define _USE_MATH_DEFINES
-#include <math.h>
-
-float phaseSensitiveAverage(float left, float right) {
-    // Calculate the phase difference between the left and right channels
-    float phaseDifference = std::atan2(right, left);
-
-    // Normalize the phase difference to the range [0, 1]
-    float normalizedPhaseDifference = (phaseDifference + M_PI) / (2.0f * M_PI);
-
-    // Use the normalized phase difference to weight the averaging
-    // This is a simple example; more sophisticated methods might use different weighting schemes
-    return (left + right) * normalizedPhaseDifference;
-}
-
-int32_t compressSample(int32_t sample, float threshold, float ratio) {
-    float sampleF = static_cast<float>(sample) / INT32_MAX;
-    if (sampleF > threshold) {
-        sampleF = threshold + (sampleF - threshold) / ratio;
-    }
-    return static_cast<int32_t>(sampleF * INT32_MAX);
-}
-
+#include "deviceexplorer.h"
 
 int main()
 {
@@ -43,30 +20,20 @@ int main()
         return hr;
     }
 
-    IMMDeviceEnumerator* enumerator { nullptr };
-
-    hr = CoCreateInstance(__uuidof(MMDeviceEnumerator),
-                            NULL,
-                            CLSCTX_ALL,
-                            __uuidof(IMMDeviceEnumerator),
-                            reinterpret_cast<void**>(&enumerator));
-
-    if (FAILED(hr)) {
-        std::cerr << "Failed to init enumerator: " << hr << std::endl;
-        return hr;
-    }
+    DeviceExplorer* explorer = new DeviceExplorer;
 
     RecordingDevice* rd = new RecordingDevice;
-    auto d = rd->getdevice();
 
-    enumerator->GetDefaultAudioEndpoint(eCapture, eConsole, &d);
+    auto d = explorer->defaultDevice(DeviceExplorer::DeviceType::Record);
+    rd->setDevice(d);
 
-    rd->initialize();
-
+    if (!rd->initialize()) {
+        std::cerr << "failed to init";
+    }
 
     IMMDevice* outputDevice { nullptr };
 
-    hr = enumerator->GetDefaultAudioEndpoint(eRender, eConsole, &outputDevice);
+    outputDevice = explorer->defaultDevice(DeviceExplorer::DeviceType::Playback);
 
     if (FAILED(hr)) {
         std::cerr << "Failed to get outputDevice: " << hr << std::endl;
@@ -109,11 +76,18 @@ int main()
     outputAudioClient->Start();
 
     outputBuffer = new BYTE[rd->frameSize() * rd->waveFormat()->nBlockAlign];
+    std::cout << "starting writing";
 
     while (true) {
-        rd->record();
+        if (!rd->record()) {
+            std::cerr << "failed to record" << std::endl;
+        }
 
         renderClient->GetBuffer(rd->frameSize(), &outputBuffer);
+
+        for (int i = 0; i < rd->frameSize(); i++) {
+            std::cout << rd->data()[i];
+        }
 
         CopyMemory(outputBuffer, rd->data(), rd->frameSize() * rd->waveFormat()->nBlockAlign);
 
@@ -133,10 +107,11 @@ int main()
         // }
 
         renderClient->ReleaseBuffer(rd->frameSize(), NULL);
-        rd->play();
-    }
 
-    enumerator->Release();
+        if (!rd->play()) {
+            std::cerr << "failed to play" << std::endl;
+        }
+    }
 
     return 0;
 }
