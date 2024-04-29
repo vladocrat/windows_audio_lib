@@ -5,9 +5,7 @@
 
 struct RecordingDevice::impl_t
 {
-    uint32_t bufferFrameSize { 0 };
     DWORD statusData { 0 };
-    BYTE* data { nullptr };
     IAudioCaptureClient* client { nullptr };
 };
 
@@ -18,7 +16,8 @@ RecordingDevice::RecordingDevice()
 
 RecordingDevice::~RecordingDevice()
 {
-    delete[] impl().data;
+    assert(impl().client);
+
     impl().client->Release();
 }
 
@@ -37,19 +36,20 @@ bool RecordingDevice::initialize() noexcept
 
     if (FAILED(err)) return false;
 
-    err = client()->GetBufferSize(&impl().bufferFrameSize);
+
+    err = client()->GetBufferSize(refFrameSize());
 
     if (FAILED(err)) return false;
 
-    impl().data = new BYTE[impl().bufferFrameSize * waveFormat()->nBlockAlign];
+    newBuffer(frameSize() * waveFormat()->nBlockAlign);
 
     return SUCCEEDED(err);
 }
 
 bool RecordingDevice::record() noexcept
 {
-    auto err = impl().client->GetBuffer(&impl().data,
-                                        &impl().bufferFrameSize,
+    auto err = impl().client->GetBuffer(refData(),
+                                        refFrameSize(),
                                         &impl().statusData,
                                         NULL,
                                         NULL);
@@ -59,17 +59,7 @@ bool RecordingDevice::record() noexcept
 
 bool RecordingDevice::play() noexcept
 {
-    auto err = impl().client->ReleaseBuffer(impl().bufferFrameSize);
+    auto err = impl().client->ReleaseBuffer(frameSize());
 
     return SUCCEEDED(err);
-}
-
-uint32_t RecordingDevice::frameSize() const noexcept
-{
-    return impl().bufferFrameSize;
-}
-
-const BYTE* RecordingDevice::data() const noexcept
-{
-    return impl().data;
 }
