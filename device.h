@@ -14,7 +14,7 @@ public:
     ~Device();
 
     const IMMDevice* device() const noexcept;
-    IMMDevice *getdevice();//! TODO: temporary
+    void setDevice(IMMDevice* device) noexcept;
 
     const IAudioClient* client() const noexcept;
     IAudioClient* client() noexcept;

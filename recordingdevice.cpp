@@ -24,8 +24,11 @@ RecordingDevice::~RecordingDevice()
 
 bool RecordingDevice::initialize() noexcept
 {
-    activate();
-    auto err = client()->GetService(__uuidof(IAudioCaptureClient),
+    auto err = activate();
+
+    if (FAILED(err)) return false;
+
+    err = client()->GetService(__uuidof(IAudioCaptureClient),
                                     reinterpret_cast<void**>(&impl().client));
 
     if (FAILED(err)) return false;
@@ -38,6 +41,8 @@ bool RecordingDevice::initialize() noexcept
 
     if (FAILED(err)) return false;
 
+    impl().data = new BYTE[impl().bufferFrameSize * waveFormat()->nBlockAlign];
+
     return SUCCEEDED(err);
 }
 
@@ -48,8 +53,6 @@ bool RecordingDevice::record() noexcept
                                         &impl().statusData,
                                         NULL,
                                         NULL);
-
-    impl().data = new BYTE[impl().bufferFrameSize * waveFormat()->nBlockAlign];
 
     return SUCCEEDED(err);
 }

@@ -28,9 +28,11 @@ const IMMDevice* Device::device() const noexcept
     return impl().device;
 }
 
-IMMDevice *Device::getdevice()
+void Device::setDevice(IMMDevice* device) noexcept
 {
-    return impl().device;
+    //! Comparing addresses if fine
+    if (device == impl().device) return;
+    impl().device = device;
 }
 
 const IAudioClient* Device::client() const noexcept

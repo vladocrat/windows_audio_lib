@@ -9,7 +9,8 @@ add_subdirectory(utils)
 
 add_executable(microphone_capture main.cpp
     recordingdevice.h recordingdevice.cpp
-    device.h device.cpp)
+    device.h device.cpp
+    deviceexplorer.h deviceexplorer.cpp)
 
 target_link_libraries(microphone_capture)
 
