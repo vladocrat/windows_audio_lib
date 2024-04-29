@@ -85,26 +85,7 @@ int main()
 
         renderClient->GetBuffer(rd->frameSize(), &outputBuffer);
 
-        for (int i = 0; i < rd->frameSize(); i++) {
-            std::cout << rd->data()[i];
-        }
-
         CopyMemory(outputBuffer, rd->data(), rd->frameSize() * rd->waveFormat()->nBlockAlign);
-
-        // if (waveFormat->nChannels != 2) {
-        //     for (DWORD i = 0; i < bufferFrameCount; i+=2) {
-        //         auto mono = (int32_t*)data + i;
-        //         auto left = (int32_t*)outputBuffer + i;
-        //         auto right = (int32_t*)outputBuffer + i + 1;
-
-        //         auto sample = compressSample(*mono, 1000.0f, .01f);
-
-        //         *left = sample;
-        //         *right = sample;
-        //     }
-        // } else {
-        //     CopyMemory(outputBuffer, data, bufferFrameCount * waveFormat->nBlockAlign);
-        // }
 
         renderClient->ReleaseBuffer(rd->frameSize(), NULL);
 
@@ -115,3 +96,19 @@ int main()
 
     return 0;
 }
+
+// if (waveFormat->nChannels != 2) {
+//     for (DWORD i = 0; i < bufferFrameCount; i+=2) {
+//         auto mono = (int32_t*)data + i;
+//         auto left = (int32_t*)outputBuffer + i;
+//         auto right = (int32_t*)outputBuffer + i + 1;
+
+//         auto sample = compressSample(*mono, 1000.0f, .01f);
+
+//         *left = sample;
+//         *right = sample;
+//     }
+// } else {
+//     CopyMemory(outputBuffer, data, bufferFrameCount * waveFormat->nBlockAlign);
+// }
+

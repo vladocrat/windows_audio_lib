@@ -9,14 +9,11 @@ class RecordingDevice : public Device
 {
 public:
     RecordingDevice();
-    ~RecordingDevice();
+    virtual ~RecordingDevice();
 
-    [[nodiscard]] bool initialize() noexcept;
-    [[nodiscard]] bool record() noexcept;
-    [[nodiscard]] bool play() noexcept;
-
-    uint32_t frameSize() const noexcept;
-    const BYTE* data() const noexcept;
+    [[nodiscard]] bool initialize() noexcept override;
+    [[nodiscard]] bool record() noexcept override;
+    [[nodiscard]] bool play() noexcept override;
 
 private:
     DECLARE_PIMPL_EX(RecordingDevice)

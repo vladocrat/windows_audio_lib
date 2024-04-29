@@ -10,6 +10,8 @@ struct Device::impl_t
     WAVEFORMATEX* format { nullptr };
     IAudioClient* client { nullptr };
     IMMDevice* device { nullptr };
+    BYTE* data { nullptr };
+    uint32_t bufferFrameSize { 0 };
 };
 
 Device::Device()
@@ -19,8 +21,28 @@ Device::Device()
 
 Device::~Device()
 {
+    assert(impl().format);
+    assert(impl().client);
+    assert(impl().device);
+    assert(impl().data);
+
     impl().device->Release();
     impl().client->Release();
+
+    delete impl().format;
+    delete impl().client;
+    delete impl().device;
+    delete[] impl().data;
+}
+
+const uint32_t& Device::frameSize() const noexcept
+{
+    return impl().bufferFrameSize;
+}
+
+const BYTE* Device::data() const noexcept
+{
+    return impl().data;
 }
 
 const IMMDevice* Device::device() const noexcept
@@ -48,6 +70,21 @@ IAudioClient* Device::client() noexcept
 const WAVEFORMATEX* Device::waveFormat() const noexcept
 {
     return impl().format;
+}
+
+uint32_t* Device::refFrameSize() noexcept
+{
+    return &impl().bufferFrameSize;
+}
+
+BYTE** Device::refData() noexcept
+{
+    return &impl().data;
+}
+
+void Device::newBuffer(size_t size) noexcept
+{
+    impl().data = new BYTE[size];
 }
 
 bool Device::activate() noexcept
