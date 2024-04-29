@@ -6,7 +6,10 @@
 #include <audioclient.h>
 #include <audiopolicy.h>
 #include <conio.h>
+#include <propsys.h>
 #include <comdef.h>
+
+static PROPERTYKEY key;
 
 #define _USE_MATH_DEFINES
 #include <math.h>
@@ -56,6 +59,39 @@ int main()
 
     IAudioClient* audioClient { nullptr };
     IMMDevice* device { nullptr };
+
+    IMMDeviceCollection* collection;
+
+    hr = enumerator->EnumAudioEndpoints(eAll, DEVICE_STATE_ACTIVE, &collection);
+
+    uint32_t count;
+    collection->GetCount(&count);
+
+    IMMDevice* d;
+    collection->Item(0, &d);
+
+    std::cout << count << std::endl;
+
+    LPWSTR str;
+    d->GetId(&str);
+
+    std::wcout << str << std::endl;
+
+    IPropertyStore* st { nullptr };
+
+    hr = d->OpenPropertyStore(STGM_READ, &st);
+
+    PROPVARIANT varName;
+    PropVariantInit(&varName);
+
+    GUID IDevice_FriendlyName = { 0xa45c254e, 0xdf1c, 0x4efd, { 0x80, 0x20, 0x67, 0xd1, 0x46, 0xa8, 0x50, 0xe0 } };
+    key.pid = 14;
+    key.fmtid = IDevice_FriendlyName;
+    hr = st->GetValue(key, &varName);
+
+    std::wstring name(varName.bstrVal, false);
+
+    std::wcout << name.size() << std::endl;
 
     hr = enumerator->GetDefaultAudioEndpoint(eCapture, eConsole, &device);
 
