@@ -15,6 +15,9 @@ public:
     [[nodiscard]] bool record() noexcept;
     [[nodiscard]] bool play() noexcept;
 
+    uint32_t frameSize() const noexcept;
+    const BYTE* data() const noexcept;
+
 private:
     DECLARE_PIMPL_EX(RecordingDevice)
 };

@@ -8,6 +8,8 @@
 #include <conio.h>
 #include <comdef.h>
 
+#include "recordingdevice.h"
+
 #define _USE_MATH_DEFINES
 #include <math.h>
 
@@ -54,41 +56,13 @@ int main()
         return hr;
     }
 
-    IAudioClient* audioClient { nullptr };
-    IMMDevice* device { nullptr };
+    RecordingDevice* rd = new RecordingDevice;
+    auto d = rd->getdevice();
 
-    hr = enumerator->GetDefaultAudioEndpoint(eCapture, eConsole, &device);
+    enumerator->GetDefaultAudioEndpoint(eCapture, eConsole, &d);
 
-    if (FAILED(hr)) {
-        std::cerr << "Failed to get default audio capture device: " << hr << std::endl;
-        return hr;
-    }
+    rd->initialize();
 
-    hr = device->Activate(__uuidof(IAudioClient),
-                          CLSCTX_ALL,
-                          NULL,
-                          reinterpret_cast<void**>(&audioClient));
-
-    if (FAILED(hr)) {
-        std::cerr << "Failed to activate device: " << hr << std::endl;
-        return hr;
-    }
-
-    WAVEFORMATEX* waveFormat { nullptr };
-
-    hr = audioClient->GetMixFormat(&waveFormat);
-
-    if (FAILED(hr)) {
-        std::cerr << "Failed to get mix format: " << hr << std::endl;
-        return hr;
-    }
-
-    hr = audioClient->Initialize(AUDCLNT_SHAREMODE_SHARED, 0, 0, 0, waveFormat, NULL);
-
-    if (FAILED(hr)) {
-        std::cerr << "Failed to initialize client: " << hr << std::endl;
-        return hr;
-    }
 
     IMMDevice* outputDevice { nullptr };
 
@@ -112,7 +86,7 @@ int main()
         return hr;
     }
 
-    hr = outputAudioClient->Initialize(AUDCLNT_SHAREMODE_SHARED, 0, 0, 0, waveFormat, NULL);
+    hr = outputAudioClient->Initialize(AUDCLNT_SHAREMODE_SHARED, 0, 0, 0, rd->waveFormat(), NULL);
 
     if (FAILED(hr)) {
         std::cerr << "Failed to initialize outputAudioClient: " << hr << std::endl;
@@ -129,53 +103,40 @@ int main()
         return hr;
     }
 
-    uint32_t bufferFrameCount { 0 };
-
-    IAudioCaptureClient* captureClient { nullptr };
-
-
-    audioClient->GetService(__uuidof(IAudioCaptureClient), reinterpret_cast<void**>(&captureClient));
-
-    BYTE* data { nullptr };
     BYTE* outputBuffer { nullptr };
     DWORD statusData;
 
-    audioClient->Start();
     outputAudioClient->Start();
 
-    audioClient->GetBufferSize(&bufferFrameCount);
-
-    data = new BYTE[bufferFrameCount * waveFormat->nBlockAlign];
-    outputBuffer = new BYTE[bufferFrameCount * waveFormat->nBlockAlign];
+    outputBuffer = new BYTE[rd->frameSize() * rd->waveFormat()->nBlockAlign];
 
     while (true) {
-        captureClient->GetBuffer(&data, &bufferFrameCount, &statusData, NULL, NULL);
+        rd->record();
 
-        renderClient->GetBuffer(bufferFrameCount, &outputBuffer);
+        renderClient->GetBuffer(rd->frameSize(), &outputBuffer);
 
-        if (waveFormat->nChannels != 2) {
-            for (DWORD i = 0; i < bufferFrameCount; i+=2) {
-                auto mono = (int32_t*)data + i;
-                auto left = (int32_t*)outputBuffer + i;
-                auto right = (int32_t*)outputBuffer + i + 1;
+        CopyMemory(outputBuffer, rd->data(), rd->frameSize() * rd->waveFormat()->nBlockAlign);
 
-                auto sample = compressSample(*mono, 1000.0f, .01f);
+        // if (waveFormat->nChannels != 2) {
+        //     for (DWORD i = 0; i < bufferFrameCount; i+=2) {
+        //         auto mono = (int32_t*)data + i;
+        //         auto left = (int32_t*)outputBuffer + i;
+        //         auto right = (int32_t*)outputBuffer + i + 1;
 
-                *left = sample;
-                *right = sample;
-            }
-        } else {
-            CopyMemory(outputBuffer, data, bufferFrameCount * waveFormat->nBlockAlign);
-        }
+        //         auto sample = compressSample(*mono, 1000.0f, .01f);
 
-        renderClient->ReleaseBuffer(bufferFrameCount, NULL);
-        captureClient->ReleaseBuffer(bufferFrameCount);
+        //         *left = sample;
+        //         *right = sample;
+        //     }
+        // } else {
+        //     CopyMemory(outputBuffer, data, bufferFrameCount * waveFormat->nBlockAlign);
+        // }
+
+        renderClient->ReleaseBuffer(rd->frameSize(), NULL);
+        rd->play();
     }
 
     enumerator->Release();
-    audioClient->Stop();
-    audioClient->Release();
-    device->Release();
 
     return 0;
 }

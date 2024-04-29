@@ -7,6 +7,7 @@
 
 struct Device::impl_t
 {
+    WAVEFORMATEX* format { nullptr };
     IAudioClient* client { nullptr };
     IMMDevice* device { nullptr };
 };
@@ -27,7 +28,12 @@ const IMMDevice* Device::device() const noexcept
     return impl().device;
 }
 
-const IAudioClient *Device::client() const noexcept
+IMMDevice *Device::getdevice()
+{
+    return impl().device;
+}
+
+const IAudioClient* Device::client() const noexcept
 {
     return impl().client;
 }
@@ -37,7 +43,12 @@ IAudioClient* Device::client() noexcept
     return impl().client;
 }
 
-bool Device::activate(WAVEFORMATEX* waveFormat) noexcept
+const WAVEFORMATEX* Device::waveFormat() const noexcept
+{
+    return impl().format;
+}
+
+bool Device::activate() noexcept
 {
     auto err = impl().device->Activate(__uuidof(IAudioClient),
                                 CLSCTX_ALL,
@@ -46,11 +57,11 @@ bool Device::activate(WAVEFORMATEX* waveFormat) noexcept
 
     if (FAILED(err)) return false;
 
-    if (!waveFormat) {
-        impl().client->GetMixFormat(&waveFormat);
+    if (!impl().format) {
+        impl().client->GetMixFormat(&impl().format);
     }
 
-    err = impl().client->Initialize(AUDCLNT_SHAREMODE_SHARED, 0, 0, 0, waveFormat, NULL);
+    err = impl().client->Initialize(AUDCLNT_SHAREMODE_SHARED, 0, 0, 0, impl().format, NULL);
 
     return SUCCEEDED(err);
 }

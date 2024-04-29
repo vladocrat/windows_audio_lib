@@ -14,9 +14,14 @@ public:
     ~Device();
 
     const IMMDevice* device() const noexcept;
+    IMMDevice *getdevice();//! TODO: temporary
+
     const IAudioClient* client() const noexcept;
     IAudioClient* client() noexcept;
-    [[nodiscard]] bool activate(WAVEFORMATEX* waveFormat = nullptr) noexcept;
+
+    const WAVEFORMATEX* waveFormat() const noexcept;
+
+    [[nodiscard]] bool activate() noexcept;
 
 private:
     DECLARE_PIMPL_EX(Device)
