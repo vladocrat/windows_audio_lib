@@ -5,15 +5,22 @@ project(microphone_capture LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTOUIC ON)
+set(CMAKE_AUTORCC ON)
+
 add_subdirectory(utils)
 
 add_executable(microphone_capture main.cpp
-    recordingdevice.h recordingdevice.cpp
     device.h device.cpp
     deviceexplorer.h deviceexplorer.cpp
-    playbackdevice.h playbackdevice.cpp)
+	general.h
+	devicemanager.h devicemanager.cpp
+)
 
-target_link_libraries(microphone_capture)
+find_package(Qt6 6.4 REQUIRED COMPONENTS Core)
+
+target_link_libraries(microphone_capture Qt6::Core)
 
 include(GNUInstallDirs)
 install(TARGETS microphone_capture

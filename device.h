@@ -1,40 +1,60 @@
 #pragma once
 
+#include "general.h"
 #include "utils/utils.h"
 
 #include <audioclient.h>
+#include <string>
+
+#include <QObject>
 
 struct IMMDevice;
-struct IAudioClient;
 
-class Device
+namespace slk {
+
+class DeviceManager;
+
+struct DeviceInfo
 {
+    std::wstring friendlyName;
+    slk::DeviceType type;
+    IMMDevice* device { nullptr };
+    WAVEFORMATEX* format { nullptr };
+};
+
+class Device : public QObject
+{
+    Q_OBJECT
 public:
+    struct Data
+    {
+        BYTE* data { nullptr };
+        UINT bufferFrameSize;
+        UINT size;
+        DWORD status;
+    };
+    
+    const DeviceInfo* info() const noexcept;
+    void playback(const Data&);
+    void start();
+    void stop();
+    
+    friend class DeviceManager;
+    
+signals:
+    void readyRead(const Data&);
+    
+private:
+    void activate() noexcept;
+    void setInfo(const DeviceInfo&) noexcept;
+    
+private:
     Device();
     ~Device();
-
-    [[nodiscard]] virtual bool initialize() noexcept = 0;
-    [[nodiscard]] virtual bool record() noexcept = 0;
-    [[nodiscard]] virtual bool play() noexcept = 0;
-
-    const uint32_t& frameSize() const noexcept;
-    const BYTE* data() const noexcept;
-
-    const IMMDevice* device() const noexcept;
-    void setDevice(IMMDevice* device) noexcept;
-
-    const IAudioClient* client() const noexcept;
-    IAudioClient* client() noexcept;
-
-    const WAVEFORMATEX* waveFormat() const noexcept;
-
-protected:
-    uint32_t* refFrameSize() noexcept;
-    BYTE** refData() noexcept;
-    void newBuffer(size_t size) noexcept;
-    [[nodiscard]] bool activate() noexcept;
-
+    
 private:
     DECLARE_PIMPL_EX(Device)
 };
+
+} //! slk
 
