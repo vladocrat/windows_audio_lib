@@ -1,29 +1,32 @@
 #pragma once
 
+#include <vector>
+#include <string>
+
+#include "general.h"
 #include "utils/utils.h"
 
-class IMMDevice;
+namespace slk {
+
+class DeviceManager;
+
+}
+
+struct IMMDevice;
 
 class DeviceExplorer
 {
 public:
-    enum class DeviceType
-    {
-        Playback = 0,
-        Record
-    };
-
-    enum class Purpose
-    {
-        Console = 0,
-        Multimedia,
-        Communications,
-    };
-
     DeviceExplorer();
     ~DeviceExplorer();
+	
+	std::vector<IMMDevice*> devices(slk::DeviceType type = slk::DeviceType::All, slk::DeviceState state = slk::DeviceState::All) const noexcept;
 
-    [[nodiscard]] IMMDevice* defaultDevice(DeviceType type, Purpose purpose = DeviceExplorer::Purpose::Console) const noexcept;
+    friend class slk::DeviceManager;
+    
+private:
+    std::wstring deviceFriendlyName(IMMDevice* device) const noexcept;
+    [[nodiscard]] IMMDevice* defaultDevice(slk::DeviceType type, slk::Purpose purpose = slk::Purpose::Console) const noexcept;
 
 private:
     DECLARE_PIMPL_EX(DeviceExplorer)

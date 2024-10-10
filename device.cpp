@@ -5,13 +5,23 @@
 #include <mmreg.h>
 #include <mmsystem.h>
 
+#include <QTimer>
+
+#include "general.h"
+
+namespace slk {
+
 struct Device::impl_t
 {
-    WAVEFORMATEX* format { nullptr };
+    DeviceInfo info;
     IAudioClient* client { nullptr };
-    IMMDevice* device { nullptr };
     BYTE* data { nullptr };
-    uint32_t bufferFrameSize { 0 };
+    uint32_t bufferFrameSize;
+    union {
+        IAudioRenderClient* renderClient;
+        IAudioCaptureClient* captureClient;
+    };
+    QTimer readyReadTimer;
 };
 
 Device::Device()
@@ -21,86 +31,72 @@ Device::Device()
 
 Device::~Device()
 {
-    assert(impl().format);
-    assert(impl().client);
-    assert(impl().device);
-    assert(impl().data);
-
-    impl().device->Release();
-    impl().client->Release();
-
-    delete impl().format;
-    delete impl().client;
-    delete impl().device;
-    delete[] impl().data;
+    
 }
 
-const uint32_t& Device::frameSize() const noexcept
+const DeviceInfo* Device::info() const noexcept
 {
-    return impl().bufferFrameSize;
+    return &impl().info;
 }
 
-const BYTE* Device::data() const noexcept
+void Device::playback(const Data& data)
 {
-    return impl().data;
+    if (impl().info.type != DeviceType::Playback) return;
+    if (data.size == 0) return;
+    
+    impl().renderClient->GetBuffer(data.bufferFrameSize, &impl().data);
+    CopyMemory(impl().data, data.data, data.size);    
+    impl().renderClient->ReleaseBuffer(data.bufferFrameSize, NULL);
 }
 
-const IMMDevice* Device::device() const noexcept
+void Device::start()
 {
-    return impl().device;
+    impl().readyReadTimer.callOnTimeout([this]() {
+        if (impl().info.type != DeviceType::Record) return;
+        impl().captureClient->ReleaseBuffer(impl().bufferFrameSize);
+        
+        DWORD statusData;
+        
+        impl().captureClient->GetBuffer(&impl().data, &impl().bufferFrameSize, &statusData, NULL, NULL);
+        
+        emit readyRead({impl().data, impl().bufferFrameSize, impl().bufferFrameSize * impl().info.format->nBlockAlign, statusData});
+    });
+    
+    impl().client->Start();
+    impl().readyReadTimer.start();
 }
 
-void Device::setDevice(IMMDevice* device) noexcept
+void Device::stop()
 {
-    //! Comparing addresses if fine
-    if (device == impl().device) return;
-    impl().device = device;
+    impl().client->Stop();
+    impl().readyReadTimer.stop();
 }
 
-const IAudioClient* Device::client() const noexcept
+void Device::activate() noexcept
 {
-    return impl().client;
-}
-
-IAudioClient* Device::client() noexcept
-{
-    return impl().client;
-}
-
-const WAVEFORMATEX* Device::waveFormat() const noexcept
-{
-    return impl().format;
-}
-
-uint32_t* Device::refFrameSize() noexcept
-{
-    return &impl().bufferFrameSize;
-}
-
-BYTE** Device::refData() noexcept
-{
-    return &impl().data;
-}
-
-void Device::newBuffer(size_t size) noexcept
-{
-    impl().data = new BYTE[size];
-}
-
-bool Device::activate() noexcept
-{
-    auto err = impl().device->Activate(__uuidof(IAudioClient),
-                                CLSCTX_ALL,
-                                NULL,
-                                reinterpret_cast<void**>(&impl().client));
-
-    if (FAILED(err)) return false;
-
-    if (!impl().format) {
-        impl().client->GetMixFormat(&impl().format);
+    impl().info.device->Activate(__uuidof(IAudioClient),
+                                    CLSCTX_ALL,
+                                    NULL,
+                                    reinterpret_cast<void**>(&impl().client));
+    impl().client->GetMixFormat(&impl().info.format);
+    impl().client->Initialize(AUDCLNT_SHAREMODE_SHARED, 0, 0, 0, impl().info.format, NULL);
+    
+    if (impl().info.type == DeviceType::Record)
+    {
+        impl().client->GetService(__uuidof(IAudioCaptureClient), reinterpret_cast<void**>(&impl().captureClient));
     }
+    else if (impl().info.type == DeviceType::Playback)
+    {
+        impl().client->GetService(__uuidof(IAudioRenderClient), reinterpret_cast<void**>(&impl().renderClient));
+    }
+    
+    impl().client->GetBufferSize(&impl().bufferFrameSize);
+    impl().data = new BYTE[impl().bufferFrameSize * impl().info.format->nBlockAlign];
+}
 
-    err = impl().client->Initialize(AUDCLNT_SHAREMODE_SHARED, 0, 0, 0, impl().format, NULL);
+void Device::setInfo(const DeviceInfo& info) noexcept
+{
+    impl().info = info;
+}
 
-    return SUCCEEDED(err);
 }
