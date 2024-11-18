@@ -24,6 +24,28 @@ struct Device::impl_t
     QTimer readyReadTimer;
 };
 
+QDataStream& operator<<(QDataStream& out, const Device::Data& data)
+{
+    out << QByteArray(reinterpret_cast<char*>(data.data), data.size);
+    out << data.bufferFrameSize;
+    out << data.size;
+    out << static_cast<uint64_t>(data.status);
+    return out;
+}
+
+QDataStream& operator>>(QDataStream& out, Device::Data& data)
+{
+    QByteArray byteData;
+    out >> byteData;
+    data.data = reinterpret_cast<BYTE*>(byteData.data());
+    out >> data.bufferFrameSize;
+    out >> data.size;
+    uint64_t status;
+    out >> status;
+    data.status = static_cast<DWORD>(status);
+    return out;
+}
+
 Device::Device()
 {
     createImpl();
