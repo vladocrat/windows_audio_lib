@@ -34,6 +34,9 @@ public:
         DWORD status;
     };
     
+    Device();
+    ~Device();
+
     const DeviceInfo* info() const noexcept;
     void playback(const Data&);
     void start();
@@ -47,10 +50,6 @@ signals:
 private:
     void activate() noexcept;
     void setInfo(const DeviceInfo&) noexcept;
-    
-private:
-    Device();
-    ~Device();
     
 private:
     DECLARE_PIMPL_EX(Device)

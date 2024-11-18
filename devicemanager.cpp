@@ -19,11 +19,11 @@ DeviceManager::~DeviceManager()
     
 }
 
-Device* DeviceManager::defaultDevice(DeviceType type, Purpose purpose) const noexcept
+std::shared_ptr<Device> DeviceManager::defaultDevice(DeviceType type, Purpose purpose) const noexcept
 {
     IMMDevice* device = impl().explorer.defaultDevice(type, purpose);
     
-    auto ret = new Device;
+    auto ret = std::make_shared<Device>();
     DeviceInfo info;
     info.device = device;
     info.friendlyName = impl().explorer.deviceFriendlyName(device);
@@ -35,7 +35,7 @@ Device* DeviceManager::defaultDevice(DeviceType type, Purpose purpose) const noe
     return ret;
 }
 
-Device* DeviceManager::create(DeviceType type) const noexcept
+std::shared_ptr<Device> DeviceManager::create(DeviceType type) const noexcept
 {   
     ///! change to use device by name
     return defaultDevice(type, Purpose::Multimedia);
