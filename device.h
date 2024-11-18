@@ -33,6 +33,9 @@ public:
         UINT size;
         DWORD status;
     };
+
+    friend QDataStream& operator<<(QDataStream& out, const Data& data);
+    friend QDataStream& operator>>(QDataStream& out, const Data& data);
     
     Device();
     ~Device();
