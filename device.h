@@ -35,7 +35,7 @@ public:
     };
 
     friend QDataStream& operator<<(QDataStream& out, const Data& data);
-    friend QDataStream& operator>>(QDataStream& out, const Data& data);
+    friend QDataStream& operator>>(QDataStream& out, Data& data);
     
     Device();
     ~Device();
