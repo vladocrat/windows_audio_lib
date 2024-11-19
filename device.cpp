@@ -26,24 +26,37 @@ struct Device::impl_t
 
 QDataStream& operator<<(QDataStream& out, const Device::Data& data)
 {
-    out << QByteArray(reinterpret_cast<char*>(data.data), data.size);
     out << data.bufferFrameSize;
     out << data.size;
     out << static_cast<uint64_t>(data.status);
+
+    if (data.data && data.size > 0)
+    {
+        out.writeRawData(reinterpret_cast<const char*>(data.data), data.size);
+    }
+
     return out;
 }
 
-QDataStream& operator>>(QDataStream& out, Device::Data& data)
+QDataStream& operator>>(QDataStream& in, Device::Data& data)
 {
-    QByteArray byteData;
-    out >> byteData;
-    data.data = reinterpret_cast<BYTE*>(byteData.data());
-    out >> data.bufferFrameSize;
-    out >> data.size;
+    in >> data.bufferFrameSize;
+    in >> data.size;
     uint64_t status;
-    out >> status;
+    in >> status;
     data.status = static_cast<DWORD>(status);
-    return out;
+
+    if (data.size > 0)
+    {
+        data.data = new BYTE[data.size];
+        in.readRawData(reinterpret_cast<char*>(data.data), data.size);
+    }
+    else
+    {
+        data.data = nullptr;
+    }
+
+    return in;
 }
 
 Device::Device()
