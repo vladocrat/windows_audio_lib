@@ -4,6 +4,7 @@
 #include <windows.h>
 #include <mmreg.h>
 #include <mmsystem.h>
+#include <QDebug>
 
 #include <QTimer>
 
@@ -79,13 +80,24 @@ void Device::playback(const Data& data)
     if (impl().info.type != DeviceType::Playback) return;
     if (data.size == 0) return;
     
+    const auto format = impl().info.format;
+    const auto bytesPerSample = format->wBitsPerSample / 8;
+    const size_t frameSize = format->nChannels * bytesPerSample;
+
+    for (size_t i = 0; i < data.size; i += frameSize) {
+        if (format->wBitsPerSample >= 2) {
+            std::memcpy(&data.data[i + bytesPerSample], &data.data[i], bytesPerSample);
+        }
+    }
+
     impl().renderClient->GetBuffer(data.bufferFrameSize, &impl().data);
-    CopyMemory(impl().data, data.data, data.size);    
+    CopyMemory(impl().data, data.data, data.size);
     impl().renderClient->ReleaseBuffer(data.bufferFrameSize, NULL);
 }
 
 void Device::start()
 {
+    impl().readyReadTimer.setInterval(0);
     impl().readyReadTimer.callOnTimeout([this]() {
         if (impl().info.type != DeviceType::Record) return;
         impl().captureClient->ReleaseBuffer(impl().bufferFrameSize);
@@ -110,9 +122,9 @@ void Device::stop()
 void Device::activate() noexcept
 {
     impl().info.device->Activate(__uuidof(IAudioClient),
-                                    CLSCTX_ALL,
-                                    NULL,
-                                    reinterpret_cast<void**>(&impl().client));
+                                 CLSCTX_ALL,
+                                 NULL,
+                                 reinterpret_cast<void**>(&impl().client));
     impl().client->GetMixFormat(&impl().info.format);
     impl().client->Initialize(AUDCLNT_SHAREMODE_SHARED, 0, 0, 0, impl().info.format, NULL);
     
