@@ -40,7 +40,7 @@ public:
     Device();
     ~Device();
 
-    const DeviceInfo* info() const noexcept;
+    const DeviceInfo& info() const noexcept;
     void playback(const Data&);
     void start();
     void stop();

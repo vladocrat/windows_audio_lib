@@ -6,8 +6,8 @@
 #include <mmsystem.h>
 #include <QDebug>
 
-#include <QTimer>
 
+#include "devicethread.h"
 #include "general.h"
 
 namespace slk {
@@ -18,11 +18,12 @@ struct Device::impl_t
     IAudioClient* client { nullptr };
     BYTE* data { nullptr };
     uint32_t bufferFrameSize;
+    HANDLE event;
     union {
         IAudioRenderClient* renderClient;
         IAudioCaptureClient* captureClient;
     };
-    QTimer readyReadTimer;
+    DeviceThread* recordThread;
 };
 
 QDataStream& operator<<(QDataStream& out, const Device::Data& data)
@@ -70,9 +71,9 @@ Device::~Device()
     
 }
 
-const DeviceInfo* Device::info() const noexcept
+const DeviceInfo& Device::info() const noexcept
 {
-    return &impl().info;
+    return impl().info;
 }
 
 void Device::playback(const Data& data)
@@ -97,26 +98,34 @@ void Device::playback(const Data& data)
 
 void Device::start()
 {
-    impl().readyReadTimer.setInterval(0);
-    impl().readyReadTimer.callOnTimeout([this]() {
-        if (impl().info.type != DeviceType::Record) return;
-        impl().captureClient->ReleaseBuffer(impl().bufferFrameSize);
-        
-        DWORD statusData;
-        
-        impl().captureClient->GetBuffer(&impl().data, &impl().bufferFrameSize, &statusData, NULL, NULL);
-        
-        emit readyRead({impl().data, impl().bufferFrameSize, impl().bufferFrameSize * impl().info.format->nBlockAlign, statusData});
+    if (impl().recordThread && impl().recordThread->isRunning()) {
+        return;
+    }
+
+    impl().event = CreateEvent(NULL, FALSE, FALSE, NULL);
+    impl().client->SetEventHandle(impl().event);
+    impl().recordThread = new DeviceThread(impl().captureClient, impl().event, impl().bufferFrameSize, impl().info.format);
+    QObject::connect(impl().recordThread, &DeviceThread::audioDataReady, this, [this](BYTE* data, UINT32 frames, DWORD status) {
+        emit readyRead({data, frames, frames * impl().info.format->nBlockAlign, status});
     });
-    
+
+    if (impl().info.type == DeviceType::Record) {
+        impl().recordThread->start();
+    }
+
     impl().client->Start();
-    impl().readyReadTimer.start();
 }
 
 void Device::stop()
 {
     impl().client->Stop();
-    impl().readyReadTimer.stop();
+
+    if (impl().recordThread) {
+        impl().recordThread->requestInterruption();
+        impl().recordThread->wait();
+    }
+
+    CloseHandle(impl().event);
 }
 
 void Device::activate() noexcept
@@ -126,7 +135,7 @@ void Device::activate() noexcept
                                  NULL,
                                  reinterpret_cast<void**>(&impl().client));
     impl().client->GetMixFormat(&impl().info.format);
-    impl().client->Initialize(AUDCLNT_SHAREMODE_SHARED, 0, 0, 0, impl().info.format, NULL);
+    impl().client->Initialize(AUDCLNT_SHAREMODE_SHARED, AUDCLNT_STREAMFLAGS_EVENTCALLBACK, 0, 0, impl().info.format, NULL);
     
     if (impl().info.type == DeviceType::Record)
     {

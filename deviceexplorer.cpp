@@ -3,6 +3,8 @@
 #include <mmdeviceapi.h>
 #include <unordered_map>
 
+#include "device.h"
+
 namespace {
 std::vector<IMMDevice*> collectionToList(IMMDeviceEnumerator* enumerator, IMMDeviceCollection* collection)
 {
@@ -45,6 +47,9 @@ const PROPERTYKEY getKey(const std::string& name)
 }
 
 }
+
+namespace slk
+{
 
 struct DeviceExplorer::impl_t
 {
@@ -89,12 +94,24 @@ UINT getDeviceStateBitFlag(slk::DeviceState state)
     return { };
 }
 
-std::vector<IMMDevice*> DeviceExplorer::devices(slk::DeviceType type, slk::DeviceState state) const noexcept
+std::vector<DeviceInfo> DeviceExplorer::devices(slk::DeviceType type, slk::DeviceState state) const noexcept
 {
-	IMMDeviceCollection* devices { nullptr };
+    IMMDeviceCollection* devices { nullptr };
     impl().enumerator->EnumAudioEndpoints(static_cast<EDataFlow>(type), getDeviceStateBitFlag(state), &devices);
-    
-    return collectionToList(impl().enumerator, devices);
+    const auto list = collectionToList(impl().enumerator, devices);
+    devices->Release();
+
+    std::vector<DeviceInfo> infoList;
+    infoList.reserve(list.size());
+
+    for (const auto device: list) {
+        DeviceInfo info;
+        info.friendlyName = deviceFriendlyName(device);
+        info.device = device;
+        infoList.emplace_back(info);
+    }
+
+    return infoList;
 }
 
 std::wstring DeviceExplorer::deviceFriendlyName(IMMDevice* device) const noexcept
@@ -124,4 +141,6 @@ IMMDevice* DeviceExplorer::defaultDevice(slk::DeviceType type, slk::Purpose purp
                                                &device);
 
     return device;
+}
+
 }

@@ -15,7 +15,9 @@ add_library(sound_capture
     device.h device.cpp
     deviceexplorer.h deviceexplorer.cpp
     general.h
-    devicemanager.h devicemanager.cpp)
+    devicemanager.h devicemanager.cpp
+    helpers.h
+    devicethread.h devicethread.cpp)
 
 find_package(Qt6 6.4 REQUIRED COMPONENTS Core)
 
