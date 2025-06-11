@@ -92,7 +92,9 @@ void Device::playback(const Data& data)
     }
 
     impl().renderClient->GetBuffer(data.bufferFrameSize, &impl().data);
-    CopyMemory(impl().data, data.data, data.size);
+    if (impl().data && data.data && data.size > 0) {
+        CopyMemory(impl().data, data.data, data.size);
+    }
     impl().renderClient->ReleaseBuffer(data.bufferFrameSize, NULL);
 }
 
