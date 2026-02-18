@@ -1,6 +1,8 @@
 #include "devicemanager.h"
 
 #include "deviceexplorer.h"
+#include "wasapiinputdevice.h"
+#include "wasapioutputdevice.h"
 
 namespace slk {
 
@@ -19,43 +21,33 @@ DeviceManager::~DeviceManager()
     
 }
 
-std::optional<std::shared_ptr<Device>> DeviceManager::defaultDevice(DeviceType type, Purpose purpose) const noexcept
+std::shared_ptr<Device> DeviceManager::defaultDevice(DeviceType type, Purpose purpose) const noexcept
 {
-    IMMDevice* device = impl().explorer.defaultDevice(type, purpose);
-    
-    auto ret = std::make_shared<Device>();
-    DeviceInfo info;
-    info.device = device;
-    info.friendlyName = impl().explorer.deviceFriendlyName(device);
-    info.type = type;
-    ret->setInfo(info);
-    
-    ret->activate();
+#ifdef WIN32
+    auto device = impl().explorer.defaultDevice(type, purpose);
 
-    return ret;
+    DeviceInfo info;
+    info.device = std::move(device);
+    info.friendlyName = impl().explorer.deviceFriendlyName(info.device.Get());
+    info.type = type;
+
+    switch (type) {
+    case DeviceType::Playback:
+        return std::shared_ptr<WASAPIOutputDevice>(new WASAPIOutputDevice(std::move(info)));
+    case DeviceType::Record:
+        return std::shared_ptr<WASAPIInputDevice>(new WASAPIInputDevice(std::move(info)));
+    case DeviceType::All:
+        break;
+    }
+#endif
+
+    return nullptr;
 }
 
-std::optional<std::shared_ptr<Device>> DeviceManager::create(DeviceType type, Purpose purpose, const QString& friendlyName) const noexcept
-{
-    if (friendlyName.isEmpty()) {
-        return defaultDevice(type, purpose);
-    }
-
-    const auto devices = impl().explorer.devices(type, DeviceState::Active);
-    const auto it = std::find_if(devices.begin(), devices.end(), [&friendlyName](const auto& devInfo) {
-        return devInfo.friendlyName == friendlyName.toStdWString();
-    });
-
-    if (it == devices.end()) {
-        return std::nullopt;
-    }
-
-    const auto info = *it;
-    auto ret = std::make_shared<Device>();
-    ret->setInfo(info);
-    ret->activate();
-
-    return ret;
+std::shared_ptr<Device> DeviceManager::create(DeviceType type) const noexcept
+{   
+    ///! change to use device by name
+    return defaultDevice(type, Purpose::Multimedia);
 }
 
 }

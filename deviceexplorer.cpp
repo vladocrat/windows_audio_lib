@@ -133,9 +133,10 @@ std::wstring DeviceExplorer::deviceFriendlyName(IMMDevice* device) const noexcep
     return deviceName;
 }
 
-IMMDevice* DeviceExplorer::defaultDevice(slk::DeviceType type, slk::Purpose purpose) const noexcept
+Microsoft::WRL::ComPtr<IMMDevice> DeviceExplorer::defaultDevice(slk::DeviceType type, slk::Purpose purpose) const noexcept
 {
-    IMMDevice* device { nullptr };
+    using Microsoft::WRL::ComPtr;
+    ComPtr<IMMDevice> device;
     impl().enumerator->GetDefaultAudioEndpoint(static_cast<EDataFlow>(type),
                                                static_cast<ERole>(purpose),
                                                &device);

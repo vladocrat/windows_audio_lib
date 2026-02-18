@@ -1,16 +1,20 @@
 #pragma once
 
-#include "general.h"
-#include "utils/utils.h"
+#include <QObject>
 
 #include <audioclient.h>
 #include <string>
+#include <wrl/client.h>
+#include <mmdeviceapi.h>
 
-#include <QObject>
+#include "general.h"
+#include "audiobuffer.h"
 
 struct IMMDevice;
 
 namespace slk {
+
+using Microsoft::WRL::ComPtr;
 
 class DeviceManager;
 
@@ -18,44 +22,36 @@ struct DeviceInfo
 {
     std::wstring friendlyName;
     slk::DeviceType type;
-    IMMDevice* device { nullptr };
-    WAVEFORMATEX* format { nullptr };
+    ComPtr<IMMDevice> device;
+
+
+    ~DeviceInfo()
+    {
+
+    }
+
+    DeviceInfo(DeviceInfo&& other) = default;
+    DeviceInfo() = default;
+    DeviceInfo& operator=(DeviceInfo&& other) = delete;
+    DeviceInfo(const DeviceInfo&) = delete;
+    DeviceInfo& operator=(const DeviceInfo&) = delete;
 };
 
 class Device : public QObject
 {
     Q_OBJECT
 public:
-    struct Data
-    {
-        BYTE* data { nullptr };
-        UINT bufferFrameSize;
-        UINT size;
-        DWORD status;
-    };
+    virtual ~Device();
 
-    friend QDataStream& operator<<(QDataStream& out, const Data& data);
-    friend QDataStream& operator>>(QDataStream& out, Data& data);
-    
-    Device();
-    ~Device();
-
-    const DeviceInfo& info() const noexcept;
-    void playback(const Data&);
-    void start();
-    void stop();
+    virtual bool open() = 0;
+    virtual bool close() = 0;
+    virtual bool start() = 0;
+    virtual bool stop() = 0;
     
     friend class DeviceManager;
     
 signals:
-    void readyRead(const Data&);
-    
-private:
-    void activate() noexcept;
-    void setInfo(const DeviceInfo&) noexcept;
-    
-private:
-    DECLARE_PIMPL_EX(Device)
+    void readyRead(const AudioBuffer<float>&);
 };
 
 } //! slk

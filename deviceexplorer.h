@@ -1,5 +1,7 @@
 #pragma once
 
+#include <wrl/client.h>
+
 #include <vector>
 #include <string>
 
@@ -24,6 +26,11 @@ public:
     std::wstring deviceFriendlyName(IMMDevice* device) const noexcept;
 
     friend class slk::DeviceManager;
+    
+private:
+    std::wstring deviceFriendlyName(IMMDevice* device) const noexcept;
+    [[nodiscard]] Microsoft::WRL::ComPtr<IMMDevice> defaultDevice(slk::DeviceType type, slk::Purpose purpose = slk::Purpose::Console) const noexcept;
+
 private:
     DECLARE_PIMPL_EX(DeviceExplorer)
 };
