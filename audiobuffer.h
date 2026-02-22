@@ -1,12 +1,9 @@
-#pragma once
+  #pragma once
 
 #include <vector>
 #include <cassert>
-#include <limits>
 #include <algorithm>
-#include <type_traits>
 
-#include "audioformat.h"
 
 namespace slk
 {
@@ -45,8 +42,21 @@ public:
         return *this;
     }
 
-    AudioBuffer(const AudioBuffer&) = delete;
-    AudioBuffer& operator=(const AudioBuffer&) = delete;
+    AudioBuffer(const AudioBuffer& other)
+        : _data(other._data)
+        , _numChannels(other._numChannels)
+        , _numSamples(other._numSamples)
+    {}
+
+    AudioBuffer& operator=(const AudioBuffer& other)
+    {
+        if (this != &other) {
+            _data = other._data;
+            _numChannels = other._numChannels;
+            _numSamples = other._numSamples;
+        }
+        return *this;
+    }
 
     template<typename Filter>
     AudioBuffer& operator|(Filter&& filter) {
@@ -70,64 +80,61 @@ public:
         std::fill(_data.begin(), _data.end(), SampleType{});
     }
 
-    template<class TargetType>
-    AudioBuffer<TargetType> to(const AudioFormat& sourceFormat) const
+    AudioBuffer<SampleType> mono() const
     {
-        const size_t bytesPerSample = sourceFormat.format()->wBitsPerSample / 8;
-        const size_t totalSamples = _data.size() / bytesPerSample;
-        const size_t numFrames = totalSamples / _numChannels;
+        if (_numChannels == 1) {
+            return *this;
+        }
 
-        auto readSample = [this, &sourceFormat](size_t i) -> double {
-            if (sourceFormat.type() == AudioFormat::Type::FLOAT) {
-                return reinterpret_cast<const float*>(_data.data())[i];
+        AudioBuffer<SampleType> result(1, _numSamples);
+
+        for (uint32_t i = 0; i < _numSamples; ++i) {
+            double mixed { 0.0 };
+
+            for (uint32_t ch = 0; ch < _numChannels; ++ch) {
+                mixed += static_cast<double>(_data[i * _numChannels + ch]);
             }
 
-            switch (sourceFormat.format()->wBitsPerSample) {
-            case 16: {
-                const auto* first = reinterpret_cast<const int16_t*>(_data.data());
-                return first[i] / 32767.0;
-            }
-            case 24: {
-                const auto* src = reinterpret_cast<const uint8_t*>(_data.data());
-                int32_t sample = src[i * 3] | (src[i * 3 + 1] << 8) | (src[i * 3 + 2] << 16);
-                if (sample & 0x800000) sample |= static_cast<int32_t>(0xFF000000);
-                return sample / 8388608.0;
-            }
-            case 32: {
-                const auto* first = reinterpret_cast<const int32_t*>(_data.data());
-                return first[i] / 2147483647.0;
-            }
-            default:
-                return 0.0;
-            }
-        };
+            result[i] = static_cast<SampleType>(mixed / _numChannels);
+        }
 
-        auto toTarget = [](double sample) -> TargetType {
-            sample = (std::clamp)(sample, -1.0, 1.0);
+        return result;
+    }
 
-            if constexpr (std::is_same_v<TargetType, float>) {
-                return static_cast<float>(sample);
-            }
-            else if constexpr (std::is_same_v<TargetType, double>) {
-                return sample;
-            }
-            else if constexpr (std::is_same_v<TargetType, int16_t>) {
-                return static_cast<int16_t>(sample * 32767.0);
-            }
-            else if constexpr (std::is_same_v<TargetType, int32_t>) {
-                return static_cast<int32_t>(sample * 2147483647.0);
-            }
-            else if constexpr (std::is_same_v<TargetType, uint8_t>) {
-                return static_cast<uint8_t>((sample + 1.0) * 127.5);
-            }
-        };
+    AudioBuffer<SampleType> stereo() const
+    {
+        if (_numChannels == 2) {
+            return *this;
+        }
 
-        AudioBuffer<TargetType> result(_numChannels, numFrames);
+        AudioBuffer<SampleType> result(2, _numSamples);
 
-        size_t i { 0 };
-        std::generate(result.begin(), result.end(), [&]() {
-            return toTarget(readSample(i++));
-        });
+        if (_numChannels == 1) [[likely]] {
+            for (uint32_t i = 0; i < _numSamples; ++i) {
+                result[i * 2]     = _data[i];
+                result[i * 2 + 1] = _data[i];
+            }
+
+            return result;
+        }
+
+        for (uint32_t i = 0; i < _numSamples; ++i) {
+            double left { 0.0 }, right { 0.0 };
+            uint32_t leftCount { 0 }, rightCount { 0 };
+
+            for (uint32_t ch = 0; ch < _numChannels; ++ch) {
+                if (ch % 2 == 0) [[likely]] {
+                    left  += static_cast<double>(_data[i * _numChannels + ch]);
+                    ++leftCount;
+                }  else {
+                    right += static_cast<double>(_data[i * _numChannels + ch]);
+                    ++rightCount;
+                }
+            }
+
+            result[i * 2]     = static_cast<SampleType>(left  / leftCount);
+            result[i * 2 + 1] = static_cast<SampleType>(right / rightCount);
+        }
 
         return result;
     }
