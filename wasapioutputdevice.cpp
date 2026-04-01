@@ -178,4 +178,9 @@ void WASAPIOutputDevice::setProcessCallback(ProcessCallback callback)
     impl().processCallback = std::move(callback);
 }
 
+const AudioFormat& WASAPIOutputDevice::format() const
+{
+    return impl().device.format();
+}
+
 }

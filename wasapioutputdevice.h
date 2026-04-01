@@ -26,6 +26,7 @@ public:
 
     void setSource(RingBuffer<float>& source);
     void setProcessCallback(ProcessCallback callback);
+    const AudioFormat& format() const;
 
 private:
     DECLARE_PIMPL_EX(WASAPIOutputDevice)

@@ -35,8 +35,3 @@ find_package(Qt6 6.4 REQUIRED COMPONENTS Core)
 
 target_link_libraries(sound_capture Qt6::Core)
 
-include(GNUInstallDirs)
-install(TARGETS sound_capture
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-)

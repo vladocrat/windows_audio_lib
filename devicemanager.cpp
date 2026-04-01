@@ -23,7 +23,7 @@ DeviceManager::~DeviceManager()
 
 std::shared_ptr<Device> DeviceManager::defaultDevice(DeviceType type, Purpose purpose) const noexcept
 {
-#ifdef WIN32
+
     auto device = impl().explorer.defaultDevice(type, purpose);
 
     DeviceInfo info;
@@ -31,6 +31,7 @@ std::shared_ptr<Device> DeviceManager::defaultDevice(DeviceType type, Purpose pu
     info.friendlyName = impl().explorer.deviceFriendlyName(info.device.Get());
     info.type = type;
 
+#ifdef WIN32
     switch (type) {
     case DeviceType::Playback:
         return std::shared_ptr<WASAPIOutputDevice>(new WASAPIOutputDevice(std::move(info)));
@@ -44,10 +45,9 @@ std::shared_ptr<Device> DeviceManager::defaultDevice(DeviceType type, Purpose pu
     return nullptr;
 }
 
-std::shared_ptr<Device> DeviceManager::create(DeviceType type) const noexcept
-{   
-    ///! change to use device by name
-    return defaultDevice(type, Purpose::Multimedia);
+std::shared_ptr<Device> DeviceManager::create(DeviceType type, const std::string& deviceName) const noexcept
+{
+    return {};
 }
 
 }

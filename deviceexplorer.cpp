@@ -6,22 +6,28 @@
 #include "device.h"
 
 namespace {
-std::vector<IMMDevice*> collectionToList(IMMDeviceEnumerator* enumerator, IMMDeviceCollection* collection)
+std::vector<IMMDevice*> collectionToList(IMMDeviceCollection* collection)
 {
     if (!collection) return {};
-    
+
     std::vector<IMMDevice*> ret;
-    UINT collectionSize;
-    collection->GetCount(&collectionSize);
+    UINT collectionSize { 0 };
+
+    if (FAILED(collection->GetCount(&collectionSize))) {
+        collection->Release();
+        return {};
+    }
+
     ret.reserve(collectionSize);
-    
+
     for (UINT i = 0; i < collectionSize; i++)
     {
         IMMDevice* device { nullptr };
-        collection->Item(i, &device);        
-        ret.push_back(device);
+        if (SUCCEEDED(collection->Item(i, &device)) && device)
+            ret.push_back(device);
     }
-    
+
+    collection->Release();
     return ret;
 }
 
@@ -94,52 +100,66 @@ UINT getDeviceStateBitFlag(slk::DeviceState state)
     return { };
 }
 
-std::vector<DeviceInfo> DeviceExplorer::devices(slk::DeviceType type, slk::DeviceState state) const noexcept
+std::vector<IMMDevice*> DeviceExplorer::devices(slk::DeviceType type, slk::DeviceState state) const noexcept
 {
+    if (!impl().enumerator) return {};
+
     IMMDeviceCollection* devices { nullptr };
-    impl().enumerator->EnumAudioEndpoints(static_cast<EDataFlow>(type), getDeviceStateBitFlag(state), &devices);
-    const auto list = collectionToList(impl().enumerator, devices);
-    devices->Release();
-
-    std::vector<DeviceInfo> infoList;
-    infoList.reserve(list.size());
-
-    for (const auto device: list) {
-        DeviceInfo info;
-        info.friendlyName = deviceFriendlyName(device);
-        info.device = device;
-        infoList.emplace_back(info);
+    if (FAILED(impl().enumerator->EnumAudioEndpoints(static_cast<EDataFlow>(type), getDeviceStateBitFlag(state), &devices))) {
+        return {};
     }
 
-    return infoList;
+    return collectionToList(devices);
 }
 
 std::wstring DeviceExplorer::deviceFriendlyName(IMMDevice* device) const noexcept
 {
     if (!device) return {};
-    
+
     IPropertyStore* props { nullptr };
-    device->OpenPropertyStore(STGM_READ, &props);
-    
+    if (FAILED(device->OpenPropertyStore(STGM_READ, &props)) || !props) {
+        return {};
+    }
+
     PROPVARIANT propVariant;
     PropVariantInit(&propVariant);
-    props->GetValue(getKey("PKEY_Device_FriendlyName"), &propVariant);
-    
-    std::wstring deviceName(propVariant.pwszVal);
+
+    std::wstring deviceName;
+
+    if (SUCCEEDED(props->GetValue(getKey("PKEY_Device_FriendlyName"), &propVariant)) && propVariant.pwszVal) {
+        deviceName = propVariant.pwszVal;
+    }
+
     PropVariantClear(&propVariant);
-    
     props->Release();
-    
+
     return deviceName;
+}
+
+Microsoft::WRL::ComPtr<IMMDevice> DeviceExplorer::device(const std::wstring& friendlyName, slk::DeviceType type, slk::Purpose purpose)
+{
+    using Microsoft::WRL::ComPtr;
+
+    if (!impl().enumerator) {
+        return {};
+    }
+
+    ComPtr<IMMDevice> device;
+    impl().enumerator->GetDevice(L"", &device);
+
+    return device;
 }
 
 Microsoft::WRL::ComPtr<IMMDevice> DeviceExplorer::defaultDevice(slk::DeviceType type, slk::Purpose purpose) const noexcept
 {
     using Microsoft::WRL::ComPtr;
+
+    if (!impl().enumerator) {
+        return {};
+    }
+
     ComPtr<IMMDevice> device;
-    impl().enumerator->GetDefaultAudioEndpoint(static_cast<EDataFlow>(type),
-                                               static_cast<ERole>(purpose),
-                                               &device);
+    impl().enumerator->GetDefaultAudioEndpoint(static_cast<EDataFlow>(type), static_cast<ERole>(purpose), &device);
 
     return device;
 }

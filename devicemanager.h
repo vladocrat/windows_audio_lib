@@ -15,7 +15,7 @@ public:
     ~DeviceManager();
     
     std::shared_ptr<Device> defaultDevice(slk::DeviceType type, slk::Purpose purpose = slk::Purpose::Multimedia) const noexcept;
-    std::shared_ptr<Device> create(slk::DeviceType type) const noexcept;
+    std::shared_ptr<Device> create(slk::DeviceType type, const std::string&) const noexcept;
     
 private:
     DECLARE_PIMPL_EX(DeviceManager);

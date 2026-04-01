@@ -4,7 +4,6 @@
 #include <cassert>
 #include <algorithm>
 
-
 namespace slk
 {
 
@@ -62,6 +61,29 @@ public:
     AudioBuffer& operator|(Filter&& filter) {
         filter(*this);
         return *this;
+    }
+
+    AudioBuffer& operator+=(const std::vector<const AudioBuffer<SampleType>*>& sources)
+    {
+        std::vector<SampleType> acc(_data.size(), 0.0);
+
+        for (const auto* src : sources) {
+            assert(src->channels() == _numChannels && src->numSamples() == _numSamples);
+            std::transform(acc.begin(), acc.end(), src->data().begin(), acc.begin(), std::plus<SampleType>{});
+        }
+
+        std::transform(acc.begin(), acc.end(), _data.begin(), [](SampleType s) {
+            return static_cast<SampleType>(std::clamp(s, -1.0, 1.0));
+        });
+
+        return *this;
+    }
+
+    AudioBuffer operator+(const std::vector<const AudioBuffer<SampleType>*>& sources) const
+    {
+        AudioBuffer out(*this);
+        out += sources;
+        return out;
     }
 
     void setSize(const uint32_t numChannels, const uint32_t numSamples)
