@@ -87,9 +87,11 @@ target_link_libraries(my_app PRIVATE sound_capture)
 ### Input device (recording)
 
 ```cpp
-#include "devicemanager.h"
-#include "wasapiinputdevice.h"
-#include "filter.h"
+#include <slk/sound_capture.h>
+// or include individually:
+// #include <slk/devicemanager.h>
+// #include <slk/wasapiinputdevice.h>
+// #include <slk/dsp/filter.h>
 
 using namespace slk;
 
@@ -121,9 +123,11 @@ input->close();
 ### Output device (playback)
 
 ```cpp
-#include "devicemanager.h"
-#include "wasapioutputdevice.h"
-#include "ringbuffer.h"
+#include <slk/sound_capture.h>
+// or include individually:
+// #include <slk/devicemanager.h>
+// #include <slk/wasapioutputdevice.h>
+// #include <slk/ringbuffer.h>
 
 using namespace slk;
 
@@ -149,8 +153,8 @@ output->close();
 ### DSP: compute a frequency spectrum
 
 ```cpp
-#include "dsp.h"
-#include "window.h"
+#include <slk/dsp/dsp.h>
+#include <slk/dsp/window.h>
 
 using namespace slk;
 
