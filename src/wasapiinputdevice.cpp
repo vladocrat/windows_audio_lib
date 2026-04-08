@@ -35,8 +35,7 @@ struct WASAPIInputDevice::impl_t
 
     WASAPIInputDevice::ProcessCallback processCallback;
 
-    impl_t(DeviceInfo&& info)
-        : device { std::move(info) }
+    impl_t(DeviceInfo&& info) : device { std::move(info) }
     {
     }
 
@@ -69,7 +68,8 @@ bool WASAPIInputDevice::open()
         return false;
     }
 
-    const auto hr = impl().device.audioClient()->GetService(__uuidof(IAudioCaptureClient), reinterpret_cast<void**>(&impl().client));
+    const auto hr = impl().device.audioClient()->GetService(__uuidof(IAudioCaptureClient),
+                                                            reinterpret_cast<void**>(&impl().client));
 
     if (hr != S_OK) {
         return false;

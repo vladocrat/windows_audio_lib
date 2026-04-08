@@ -22,11 +22,13 @@
 
 #include "deviceinfo.h"
 
-namespace {
+namespace
+{
 
 std::wstring getDeviceFriendlyName(IMMDevice* device)
 {
-    if (!device) return {};
+    if (!device)
+        return {};
 
     IPropertyStore* props { nullptr };
     if (FAILED(device->OpenPropertyStore(STGM_READ, &props)) || !props) {
@@ -54,7 +56,8 @@ std::wstring getDeviceFriendlyName(IMMDevice* device)
 
 std::wstring getDeviceId(IMMDevice* device)
 {
-    if (!device) return {};
+    if (!device)
+        return {};
 
     LPWSTR id { nullptr };
     if (FAILED(device->GetId(&id)) || !id) {
@@ -69,11 +72,11 @@ std::wstring getDeviceId(IMMDevice* device)
 UINT getDeviceStateBitFlag(slk::DeviceState state)
 {
     static const std::unordered_map<slk::DeviceState, unsigned int> deviceStateMap = {
-        {slk::DeviceState::Active, DEVICE_STATE_ACTIVE},
-        {slk::DeviceState::Disable, DEVICE_STATE_DISABLED},
-        {slk::DeviceState::NotPresent, DEVICE_STATE_NOTPRESENT},
-        {slk::DeviceState::Unplugged, DEVICE_STATE_UNPLUGGED},
-        {slk::DeviceState::All, DEVICE_STATEMASK_ALL}
+        { slk::DeviceState::Active, DEVICE_STATE_ACTIVE },
+        { slk::DeviceState::Disable, DEVICE_STATE_DISABLED },
+        { slk::DeviceState::NotPresent, DEVICE_STATE_NOTPRESENT },
+        { slk::DeviceState::Unplugged, DEVICE_STATE_UNPLUGGED },
+        { slk::DeviceState::All, DEVICE_STATEMASK_ALL }
     };
 
     auto it = deviceStateMap.find(state);
@@ -82,7 +85,7 @@ UINT getDeviceStateBitFlag(slk::DeviceState state)
         return it->second;
     }
 
-    return { };
+    return {};
 }
 
 }
@@ -99,26 +102,34 @@ DeviceExplorer::DeviceExplorer()
 {
     createImpl();
 
-    CoCreateInstance(__uuidof(MMDeviceEnumerator), NULL, CLSCTX_ALL, __uuidof(IMMDeviceEnumerator), reinterpret_cast<void**>(&impl().enumerator));
+    CoCreateInstance(__uuidof(MMDeviceEnumerator),
+                     NULL,
+                     CLSCTX_ALL,
+                     __uuidof(IMMDeviceEnumerator),
+                     reinterpret_cast<void**>(&impl().enumerator));
 }
 
 DeviceExplorer::~DeviceExplorer()
 {
-    if (!impl().enumerator) return;
+    if (!impl().enumerator)
+        return;
 
     impl().enumerator->Release();
 }
 
 std::vector<DeviceDescriptor> DeviceExplorer::devices(slk::DeviceType type, slk::DeviceState state) const noexcept
 {
-    if (!impl().enumerator) return {};
+    if (!impl().enumerator)
+        return {};
 
     IMMDeviceCollection* collection { nullptr };
-    if (FAILED(impl().enumerator->EnumAudioEndpoints(static_cast<EDataFlow>(type), getDeviceStateBitFlag(state), &collection))) {
+    if (FAILED(impl().enumerator->EnumAudioEndpoints(
+            static_cast<EDataFlow>(type), getDeviceStateBitFlag(state), &collection))) {
         return {};
     }
 
-    if (!collection) return {};
+    if (!collection)
+        return {};
 
     UINT count { 0 };
     if (FAILED(collection->GetCount(&count))) {
@@ -150,7 +161,8 @@ std::vector<DeviceDescriptor> DeviceExplorer::devices(slk::DeviceType type, slk:
 
 DeviceInfo DeviceExplorer::resolveDevice(const DeviceDescriptor& desc) const noexcept
 {
-    if (!impl().enumerator) return {};
+    if (!impl().enumerator)
+        return {};
 
     DeviceInfo info;
     info.friendlyName = desc.name;
@@ -164,7 +176,8 @@ DeviceInfo DeviceExplorer::resolveDevice(const DeviceDescriptor& desc) const noe
 
 DeviceInfo DeviceExplorer::resolveDefaultDevice(DeviceType type, Purpose purpose) const noexcept
 {
-    if (!impl().enumerator) return {};
+    if (!impl().enumerator)
+        return {};
 
     DeviceInfo info;
     info.type = type;

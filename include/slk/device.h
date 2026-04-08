@@ -20,7 +20,8 @@
 #include <slk/audiobuffer.h>
 #include <slk/audioformat.h>
 
-namespace slk {
+namespace slk
+{
 
 class Device
 {

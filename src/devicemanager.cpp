@@ -21,7 +21,8 @@
 #include "wasapiinputdevice.h"
 #include "wasapioutputdevice.h"
 
-namespace slk {
+namespace slk
+{
 
 struct DeviceManager::impl_t
 {
@@ -35,7 +36,6 @@ DeviceManager::DeviceManager()
 
 DeviceManager::~DeviceManager()
 {
-
 }
 
 std::shared_ptr<InputDevice> DeviceManager::defaultInputDevice(Purpose purpose) const noexcept

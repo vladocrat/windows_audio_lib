@@ -22,7 +22,8 @@
 
 #include "utils.h"
 
-namespace slk {
+namespace slk
+{
 
 struct DeviceInfo;
 
@@ -32,7 +33,8 @@ public:
     DeviceExplorer();
     ~DeviceExplorer();
 
-    std::vector<DeviceDescriptor> devices(slk::DeviceType type = slk::DeviceType::All, slk::DeviceState state = slk::DeviceState::All) const noexcept;
+    std::vector<DeviceDescriptor> devices(slk::DeviceType type = slk::DeviceType::All,
+                                          slk::DeviceState state = slk::DeviceState::All) const noexcept;
 
     DeviceInfo resolveDevice(const DeviceDescriptor& desc) const noexcept;
     DeviceInfo resolveDefaultDevice(slk::DeviceType type, slk::Purpose purpose) const noexcept;

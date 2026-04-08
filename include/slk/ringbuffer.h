@@ -25,8 +25,9 @@
 namespace slk
 {
 
-//! Needs to be initialized with powers of 2 otherwise can have "hidden writes" due to differents in present and expeceted capacity
-template<class T>
+//! Needs to be initialized with powers of 2 otherwise can have "hidden writes" due to differents in present and
+//! expeceted capacity
+template <class T>
 class alignas(64) RingBuffer
 {
 public:
@@ -57,7 +58,6 @@ public:
         const auto secondWrite = sizeToWrite - firstWrite;
 
         std::copy_n(data.begin(), firstWrite, _data.begin() + maskedIx);
-
 
         if (secondWrite > 0) {
             std::copy_n(data.begin() + firstWrite, secondWrite, _data.begin());

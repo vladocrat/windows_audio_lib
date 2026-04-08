@@ -16,10 +16,7 @@
 
 #include <slk/audiobuffer.h>
 
-
 namespace slk
 {
-
-
 
 }

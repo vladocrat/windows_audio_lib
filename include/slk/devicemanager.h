@@ -22,7 +22,8 @@
 
 #include "utils.h"
 
-namespace slk {
+namespace slk
+{
 
 class InputDevice;
 class OutputDevice;

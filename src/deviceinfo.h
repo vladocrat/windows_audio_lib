@@ -25,7 +25,8 @@
 #include <mmdeviceapi.h>
 #endif
 
-namespace slk {
+namespace slk
+{
 
 struct DeviceInfo
 {

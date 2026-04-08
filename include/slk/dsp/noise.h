@@ -25,7 +25,7 @@ namespace slk
 namespace dsp
 {
 
-template<class SampleType>
+template <class SampleType>
 AudioBuffer<SampleType> whiteNoise(const size_t numSamples, const SampleType amplitude = 1.0f)
 {
     AudioBuffer<SampleType> buffer(1, numSamples);

@@ -18,11 +18,8 @@
 namespace slk
 {
 
-
 Device::~Device()
 {
-    
 }
-
 
 }

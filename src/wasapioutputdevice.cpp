@@ -38,8 +38,7 @@ struct WASAPIOutputDevice::impl_t
     std::atomic_bool shouldStop { false };
     HANDLE deviceEvent { nullptr };
 
-    impl_t(DeviceInfo&& info)
-        : device { std::move(info) }
+    impl_t(DeviceInfo&& info) : device { std::move(info) }
     {
     }
 
@@ -71,7 +70,8 @@ bool WASAPIOutputDevice::open()
         return false;
     }
 
-    auto hr = impl().device.audioClient()->GetService(__uuidof(IAudioRenderClient), reinterpret_cast<void**>(&impl().client));
+    auto hr =
+        impl().device.audioClient()->GetService(__uuidof(IAudioRenderClient), reinterpret_cast<void**>(&impl().client));
 
     if (hr != S_OK) {
         return false;

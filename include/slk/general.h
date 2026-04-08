@@ -18,7 +18,8 @@
 
 #include <string>
 
-namespace slk {
+namespace slk
+{
 
 enum class DeviceType
 {

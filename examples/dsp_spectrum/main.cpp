@@ -48,20 +48,16 @@ int main()
 
         while (accumulator.size() >= kWindowSize) {
             slk::AudioBuffer<float> windowed(1, kWindowSize);
-            window.apply(
-                std::span<float>(accumulator.data(), kWindowSize),
-                std::span<float>(windowed.data().data(), kWindowSize)
-            );
+            window.apply(std::span<float>(accumulator.data(), kWindowSize),
+                         std::span<float>(windowed.data().data(), kWindowSize));
 
-            auto spectrum  = slk::dsp::dft<float>(windowed, sampleRate);
-            auto freqMags  = slk::dsp::freqMag<float>(spectrum, sampleRate);
+            auto spectrum = slk::dsp::dft<float>(windowed, sampleRate);
+            auto freqMags = slk::dsp::freqMag<float>(spectrum, sampleRate);
 
             std::partial_sort(freqMags.begin(),
                               freqMags.begin() + std::min<size_t>(5, freqMags.size()),
                               freqMags.end(),
-                              [](const auto& a, const auto& b) {
-                                  return a.second > b.second;
-                              });
+                              [](const auto& a, const auto& b) { return a.second > b.second; });
 
             std::cout << "--- top 5 frequencies ---\n";
             for (size_t i = 0; i < 5 && i < freqMags.size(); ++i)

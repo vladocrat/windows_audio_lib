@@ -24,7 +24,7 @@ namespace slk
 
 class AudioFormat;
 
-template<typename SampleType>
+template <typename SampleType>
 class AudioBuffer
 {
 public:
@@ -36,9 +36,7 @@ public:
     }
 
     AudioBuffer(AudioBuffer&& other) noexcept
-        : _data(std::move(other._data))
-        , _numChannels(other._numChannels)
-        , _numSamples(other._numSamples)
+        : _data(std::move(other._data)), _numChannels(other._numChannels), _numSamples(other._numSamples)
     {
         other._numChannels = 0;
         other._numSamples = 0;
@@ -57,10 +55,9 @@ public:
     }
 
     AudioBuffer(const AudioBuffer& other)
-        : _data(other._data)
-        , _numChannels(other._numChannels)
-        , _numSamples(other._numSamples)
-    {}
+        : _data(other._data), _numChannels(other._numChannels), _numSamples(other._numSamples)
+    {
+    }
 
     AudioBuffer& operator=(const AudioBuffer& other)
     {
@@ -72,8 +69,9 @@ public:
         return *this;
     }
 
-    template<typename Filter>
-    AudioBuffer& operator|(Filter&& filter) {
+    template <typename Filter>
+    AudioBuffer& operator|(Filter&& filter)
+    {
         filter(*this);
         return *this;
     }
@@ -84,7 +82,7 @@ public:
 
         for (const auto* src : sources) {
             assert(src->channels() == _numChannels && src->numSamples() == _numSamples);
-            std::transform(acc.begin(), acc.end(), src->data().begin(), acc.begin(), std::plus<SampleType>{});
+            std::transform(acc.begin(), acc.end(), src->data().begin(), acc.begin(), std::plus<SampleType> {});
         }
 
         std::transform(acc.begin(), acc.end(), _data.begin(), [](SampleType s) {
@@ -114,7 +112,7 @@ public:
 
     void clear()
     {
-        std::fill(_data.begin(), _data.end(), SampleType{});
+        std::fill(_data.begin(), _data.end(), SampleType {});
     }
 
     AudioBuffer<SampleType> mono() const
@@ -146,30 +144,35 @@ public:
 
         AudioBuffer<SampleType> result(2, _numSamples);
 
-        if (_numChannels == 1) [[likely]] {
-            for (uint32_t i = 0; i < _numSamples; ++i) {
-                result[i * 2]     = _data[i];
-                result[i * 2 + 1] = _data[i];
-            }
+        if (_numChannels == 1)
+            [[likely]]
+            {
+                for (uint32_t i = 0; i < _numSamples; ++i) {
+                    result[i * 2] = _data[i];
+                    result[i * 2 + 1] = _data[i];
+                }
 
-            return result;
-        }
+                return result;
+            }
 
         for (uint32_t i = 0; i < _numSamples; ++i) {
             double left { 0.0 }, right { 0.0 };
             uint32_t leftCount { 0 }, rightCount { 0 };
 
             for (uint32_t ch = 0; ch < _numChannels; ++ch) {
-                if (ch % 2 == 0) [[likely]] {
-                    left  += static_cast<double>(_data[i * _numChannels + ch]);
-                    ++leftCount;
-                }  else {
+                if (ch % 2 == 0)
+                    [[likely]]
+                    {
+                        left += static_cast<double>(_data[i * _numChannels + ch]);
+                        ++leftCount;
+                    }
+                else {
                     right += static_cast<double>(_data[i * _numChannels + ch]);
                     ++rightCount;
                 }
             }
 
-            result[i * 2]     = static_cast<SampleType>(left  / leftCount);
+            result[i * 2] = static_cast<SampleType>(left / leftCount);
             result[i * 2 + 1] = static_cast<SampleType>(right / rightCount);
         }
 
@@ -186,20 +189,47 @@ public:
         return _data;
     }
 
-    auto begin() { return _data.begin(); }
-    auto end() { return _data.end(); }
-    auto begin() const { return _data.begin(); }
-    auto end() const { return _data.end(); }
-    auto size() const { return _data.size(); }
-    auto channels() const { return _numChannels; }
-    auto numSamples() const { return _numSamples; }
+    auto begin()
+    {
+        return _data.begin();
+    }
+    auto end()
+    {
+        return _data.end();
+    }
+    auto begin() const
+    {
+        return _data.begin();
+    }
+    auto end() const
+    {
+        return _data.end();
+    }
+    auto size() const
+    {
+        return _data.size();
+    }
+    auto channels() const
+    {
+        return _numChannels;
+    }
+    auto numSamples() const
+    {
+        return _numSamples;
+    }
 
-    SampleType operator[](const size_t ix) const { return _data[ix]; }
+    SampleType operator[](const size_t ix) const
+    {
+        return _data[ix];
+    }
 
-    SampleType& operator[](const size_t ix) { return _data[ix]; }
+    SampleType& operator[](const size_t ix)
+    {
+        return _data[ix];
+    }
 
 private:
-    template<typename U>
+    template <typename U>
     friend class AudioBuffer;
 
     std::vector<SampleType> _data;

@@ -43,7 +43,6 @@ AudioFormat::AudioFormat(uint16_t channels, uint32_t sampleRate, uint16_t bitsPe
 
 AudioFormat::~AudioFormat()
 {
-
 }
 
 AudioFormat::AudioFormat(AudioFormat&&) noexcept = default;

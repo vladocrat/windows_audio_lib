@@ -53,12 +53,13 @@ WAVEFORMATEX* negotiateFloatFormat(IAudioClient* client)
     if (mixFormat->wFormatTag == WAVE_FORMAT_EXTENSIBLE) {
         floatFormat.dwChannelMask = reinterpret_cast<WAVEFORMATEXTENSIBLE*>(mixFormat)->dwChannelMask;
     } else {
-        floatFormat.dwChannelMask = (mixFormat->nChannels == 2) ?
-                                        (SPEAKER_FRONT_LEFT | SPEAKER_FRONT_RIGHT) : SPEAKER_FRONT_CENTER;
+        floatFormat.dwChannelMask =
+            (mixFormat->nChannels == 2) ? (SPEAKER_FRONT_LEFT | SPEAKER_FRONT_RIGHT) : SPEAKER_FRONT_CENTER;
     }
 
     WAVEFORMATEX* closestMatch { nullptr };
-    HRESULT hr = client->IsFormatSupported(AUDCLNT_SHAREMODE_SHARED, reinterpret_cast<WAVEFORMATEX*>(&floatFormat), &closestMatch);
+    HRESULT hr = client->IsFormatSupported(
+        AUDCLNT_SHAREMODE_SHARED, reinterpret_cast<WAVEFORMATEX*>(&floatFormat), &closestMatch);
 
     WAVEFORMATEX* result { nullptr };
 
@@ -89,10 +90,8 @@ struct WASAPIDevice::impl_t
     AudioFormat format;
     WAVEFORMATEX* rawFormat { nullptr };
 
-    impl_t(DeviceInfo&& info)
-        : info { std::move(info) }
+    impl_t(DeviceInfo&& info) : info { std::move(info) }
     {
-
     }
 
     ~impl_t()
@@ -114,12 +113,12 @@ WASAPIDevice::WASAPIDevice(DeviceInfo&& info)
 
 WASAPIDevice::~WASAPIDevice()
 {
-
 }
 
 bool WASAPIDevice::open(const DWORD streamFlags)
 {
-    auto res = info().device->Activate(__uuidof(IAudioClient), CLSCTX_ALL, NULL, reinterpret_cast<void**>(&impl().client));
+    auto res =
+        info().device->Activate(__uuidof(IAudioClient), CLSCTX_ALL, NULL, reinterpret_cast<void**>(&impl().client));
 
     if (res != S_OK) {
         return false;
@@ -142,13 +141,10 @@ bool WASAPIDevice::open(const DWORD streamFlags)
     }
 
     impl().format = AudioFormat(
-        static_cast<uint16_t>(fmt->nChannels),
-        fmt->nSamplesPerSec,
-        static_cast<uint16_t>(fmt->wBitsPerSample),
-        type
-    );
+        static_cast<uint16_t>(fmt->nChannels), fmt->nSamplesPerSec, static_cast<uint16_t>(fmt->wBitsPerSample), type);
 
-    res = impl().client->Initialize(AUDCLNT_SHAREMODE_SHARED, streamFlags, BUFFER_LATENCY.count(), 0, impl().rawFormat, NULL);
+    res = impl().client->Initialize(
+        AUDCLNT_SHAREMODE_SHARED, streamFlags, BUFFER_LATENCY.count(), 0, impl().rawFormat, NULL);
 
     if (res != S_OK) {
         return false;

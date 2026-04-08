@@ -39,7 +39,8 @@ slk::DeviceDescriptor pickDevice(const std::vector<slk::DeviceDescriptor>& devic
         if (idx < devices.size()) {
             return devices[idx];
         }
-    } catch (...) {}
+    } catch (...) {
+    }
 
     return {};
 }
@@ -53,13 +54,13 @@ int main()
     slk::DeviceExplorer explorer;
     slk::DeviceManager manager;
 
-    const auto inputDescs  = explorer.devices(slk::DeviceType::Record,   slk::DeviceState::Active);
+    const auto inputDescs = explorer.devices(slk::DeviceType::Record, slk::DeviceState::Active);
     const auto outputDescs = explorer.devices(slk::DeviceType::Playback, slk::DeviceState::Active);
 
-    const auto inputDesc  = pickDevice(inputDescs,  "input");
+    const auto inputDesc = pickDevice(inputDescs, "input");
     const auto outputDesc = pickDevice(outputDescs, "output");
 
-    auto input  = inputDesc.id.empty()  ? manager.defaultInputDevice() : manager.createInputDevice(inputDesc);
+    auto input = inputDesc.id.empty() ? manager.defaultInputDevice() : manager.createInputDevice(inputDesc);
     auto output = outputDesc.id.empty() ? manager.defaultOutputDevice() : manager.createOutputDevice(outputDesc);
 
     if (!input) {
@@ -82,12 +83,10 @@ int main()
         return 1;
     }
 
-    std::wcout << L"Input  — " << input->descriptor().name
-               << L" | rate: " << input->format().sampleRate()
+    std::wcout << L"Input  — " << input->descriptor().name << L" | rate: " << input->format().sampleRate()
                << L" channels: " << input->format().channels() << L"\n";
 
-    std::wcout << L"Output — " << output->descriptor().name
-               << L" | rate: " << output->format().sampleRate()
+    std::wcout << L"Output — " << output->descriptor().name << L" | rate: " << output->format().sampleRate()
                << L" channels: " << output->format().channels() << L"\n";
 
     // Ring buffer sized for ~1 second at 48 kHz stereo (power of 2)
@@ -95,9 +94,7 @@ int main()
 
     output->setSource(ring);
 
-    input->setProcessCallback([&](slk::AudioBuffer<float>& buf) {
-        ring.write(buf.data());
-    });
+    input->setProcessCallback([&](slk::AudioBuffer<float>& buf) { ring.write(buf.data()); });
 
     std::thread captureThread([&]() { input->start(); });
     std::thread playbackThread([&]() { output->start(); });
