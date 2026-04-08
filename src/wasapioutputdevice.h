@@ -19,18 +19,23 @@
 #include "utils.h"
 
 #include <slk/outputdevice.h>
+#include <slk/ringbuffer.h>
 
 namespace slk
 {
 
 struct DeviceInfo;
+struct DeviceDescriptor;
+class AudioFormat;
 
 class WASAPIOutputDevice : public OutputDevice
 {
 public:
     WASAPIOutputDevice(DeviceInfo&& info);
     WASAPIOutputDevice() = delete;
-    ~WASAPIOutputDevice();
+    WASAPIOutputDevice(WASAPIOutputDevice&&) = default;
+    WASAPIOutputDevice& operator=(WASAPIOutputDevice&&) = default;
+    ~WASAPIOutputDevice() override;
 
     bool open() override;
     bool close() override;
@@ -39,8 +44,8 @@ public:
 
     void setSource(RingBuffer<float>& source) override;
     void setProcessCallback(ProcessCallback callback) override;
-    const AudioFormat& format() const override;
-    DeviceDescriptor descriptor() const override;
+    [[nodiscard]] const AudioFormat& format() const override;
+    [[nodiscard]] DeviceDescriptor descriptor() const override;
 
 private:
     DECLARE_PIMPL_EX(WASAPIOutputDevice)

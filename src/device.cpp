@@ -18,8 +18,6 @@
 namespace slk
 {
 
-Device::~Device()
-{
-}
+Device::~Device() = default;
 
 }

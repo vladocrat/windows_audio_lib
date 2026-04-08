@@ -23,7 +23,7 @@
 namespace slk
 {
 
-class Device
+class Device // NOLINT(cppcoreguidelines-special-member-functions)
 {
 public:
     virtual ~Device();
@@ -33,8 +33,8 @@ public:
     virtual bool start() = 0;
     virtual bool stop() = 0;
 
-    virtual const AudioFormat& format() const = 0;
-    virtual DeviceDescriptor descriptor() const = 0;
+    [[nodiscard]] virtual const AudioFormat& format() const = 0;
+    [[nodiscard]] virtual DeviceDescriptor descriptor() const = 0;
 };
 
 } //! slk

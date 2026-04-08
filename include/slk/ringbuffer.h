@@ -28,7 +28,7 @@ namespace slk
 //! Needs to be initialized with powers of 2 otherwise can have "hidden writes" due to differents in present and
 //! expeceted capacity
 template <class T>
-class alignas(64) RingBuffer
+class alignas(64) RingBuffer // NOLINT(clang-analyzer-optin.performance.Padding)
 {
 public:
     RingBuffer(const size_t bufferSize)
@@ -132,7 +132,6 @@ private:
         return _data.capacity() - 1;
     }
 
-private:
     std::vector<T> _data;
     alignas(64) std::atomic<size_t> _writeIx;
     alignas(64) std::atomic<size_t> _readIx;

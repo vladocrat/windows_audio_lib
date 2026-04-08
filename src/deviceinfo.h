@@ -32,15 +32,16 @@ struct DeviceInfo
 {
     std::wstring friendlyName;
     std::wstring deviceId;
-    slk::DeviceType type;
+    slk::DeviceType type { DeviceType::All };
 
 #ifdef WIN32
     Microsoft::WRL::ComPtr<IMMDevice> device;
 #endif
 
     DeviceInfo() = default;
-    DeviceInfo(DeviceInfo&&) = default;
-    DeviceInfo& operator=(DeviceInfo&&) = default;
+    ~DeviceInfo() = default;
+    DeviceInfo(DeviceInfo&&) noexcept = default;
+    DeviceInfo& operator=(DeviceInfo&&) noexcept = default;
     DeviceInfo(const DeviceInfo&) = delete;
     DeviceInfo& operator=(const DeviceInfo&) = delete;
 };

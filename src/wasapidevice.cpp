@@ -28,7 +28,7 @@ namespace
 
 using namespace std::chrono_literals;
 
-static constexpr const auto BUFFER_LATENCY = 10ms;
+constexpr auto BUFFER_LATENCY = 10ms;
 
 WAVEFORMATEX* negotiateFloatFormat(IAudioClient* client)
 {
@@ -58,7 +58,7 @@ WAVEFORMATEX* negotiateFloatFormat(IAudioClient* client)
     }
 
     WAVEFORMATEX* closestMatch { nullptr };
-    HRESULT hr = client->IsFormatSupported(
+    const HRESULT hr = client->IsFormatSupported(
         AUDCLNT_SHAREMODE_SHARED, reinterpret_cast<WAVEFORMATEX*>(&floatFormat), &closestMatch);
 
     WAVEFORMATEX* result { nullptr };
@@ -82,7 +82,7 @@ WAVEFORMATEX* negotiateFloatFormat(IAudioClient* client)
 namespace slk
 {
 
-struct WASAPIDevice::impl_t
+struct WASAPIDevice::impl_t // NOLINT(cppcoreguidelines-special-member-functions)
 {
     DeviceInfo info;
     IAudioClient* client { nullptr };
@@ -111,14 +111,12 @@ WASAPIDevice::WASAPIDevice(DeviceInfo&& info)
     createImpl(std::move(info));
 }
 
-WASAPIDevice::~WASAPIDevice()
-{
-}
+WASAPIDevice::~WASAPIDevice() = default;
 
 bool WASAPIDevice::open(const DWORD streamFlags)
 {
     auto res =
-        info().device->Activate(__uuidof(IAudioClient), CLSCTX_ALL, NULL, reinterpret_cast<void**>(&impl().client));
+        info().device->Activate(__uuidof(IAudioClient), CLSCTX_ALL, nullptr, reinterpret_cast<void**>(&impl().client));
 
     if (res != S_OK) {
         return false;
@@ -144,13 +142,9 @@ bool WASAPIDevice::open(const DWORD streamFlags)
         static_cast<uint16_t>(fmt->nChannels), fmt->nSamplesPerSec, static_cast<uint16_t>(fmt->wBitsPerSample), type);
 
     res = impl().client->Initialize(
-        AUDCLNT_SHAREMODE_SHARED, streamFlags, BUFFER_LATENCY.count(), 0, impl().rawFormat, NULL);
+        AUDCLNT_SHAREMODE_SHARED, streamFlags, BUFFER_LATENCY.count(), 0, impl().rawFormat, nullptr);
 
-    if (res != S_OK) {
-        return false;
-    }
-
-    return true;
+    return res == S_OK;
 }
 
 const DeviceInfo& WASAPIDevice::info() const
@@ -158,7 +152,7 @@ const DeviceInfo& WASAPIDevice::info() const
     return impl().info;
 }
 
-IAudioClient* const WASAPIDevice::audioClient() const
+IAudioClient* WASAPIDevice::audioClient() const
 {
     return impl().client;
 }

@@ -32,16 +32,17 @@ public:
     WASAPIDevice(DeviceInfo&& info);
     virtual ~WASAPIDevice();
 
-    bool open(const DWORD streamFlags);
+    bool open(DWORD streamFlags);
 
-    const DeviceInfo& info() const;
-    IAudioClient* const audioClient() const;
-    const AudioBuffer<BYTE>& buffer() const;
-    const AudioFormat& format() const;
-    DeviceDescriptor descriptor() const;
+    [[nodiscard]] const DeviceInfo& info() const;
+    [[nodiscard]] IAudioClient* audioClient() const;
+    [[nodiscard]] const AudioBuffer<BYTE>& buffer() const;
+    [[nodiscard]] const AudioFormat& format() const;
+    [[nodiscard]] DeviceDescriptor descriptor() const;
 
 private:
     DECLARE_PIMPL_EX(WASAPIDevice)
+    DECLARE_DEFAULT_MOVE(WASAPIDevice)
 };
 
 }

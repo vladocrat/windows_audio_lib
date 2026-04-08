@@ -16,8 +16,8 @@
 
 #include "wasapioutputdevice.h"
 
-#define NOMINMAX
 #include <Windows.h>
+
 #include <cstring>
 
 #include "wasapidevice.h"
@@ -27,7 +27,7 @@
 namespace slk
 {
 
-struct WASAPIOutputDevice::impl_t
+struct WASAPIOutputDevice::impl_t // NOLINT(cppcoreguidelines-special-member-functions)
 {
     WASAPIDevice device;
     IAudioRenderClient* client { nullptr };
@@ -51,7 +51,7 @@ struct WASAPIOutputDevice::impl_t
         if (deviceEvent) {
             CloseHandle(deviceEvent);
         }
-    }
+    }    
 };
 
 WASAPIOutputDevice::WASAPIOutputDevice(DeviceInfo&& info)
@@ -59,9 +59,7 @@ WASAPIOutputDevice::WASAPIOutputDevice(DeviceInfo&& info)
     createImpl(std::move(info));
 }
 
-WASAPIOutputDevice::~WASAPIOutputDevice()
-{
-}
+WASAPIOutputDevice::~WASAPIOutputDevice() = default;
 
 bool WASAPIOutputDevice::open()
 {
@@ -79,11 +77,7 @@ bool WASAPIOutputDevice::open()
 
     hr = impl().device.audioClient()->GetBufferSize(&impl().bufferFrameCount);
 
-    if (hr != S_OK) {
-        return false;
-    }
-
-    return true;
+    return hr == S_OK;
 }
 
 bool WASAPIOutputDevice::close()
@@ -151,7 +145,7 @@ bool WASAPIOutputDevice::start()
         AudioBuffer<float> tempBuffer(channels, numFramesAvailable);
 
         if (impl().source) {
-            const size_t maxSamples = numFramesAvailable * channels;
+            const size_t maxSamples = static_cast<size_t>(numFramesAvailable) * channels;
             impl().source->read(std::span<float>(tempBuffer.data().data(), maxSamples), maxSamples);
         }
 
@@ -159,7 +153,7 @@ bool WASAPIOutputDevice::start()
             impl().processCallback(tempBuffer);
         }
 
-        const size_t bytesToWrite = numFramesAvailable * channels * sizeof(float);
+        const size_t bytesToWrite = static_cast<size_t>(numFramesAvailable) * channels * sizeof(float);
         std::memcpy(data, tempBuffer.data().data(), bytesToWrite);
 
         impl().client->ReleaseBuffer(numFramesAvailable, 0);

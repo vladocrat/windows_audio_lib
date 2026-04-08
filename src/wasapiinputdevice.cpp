@@ -26,7 +26,7 @@
 namespace slk
 {
 
-struct WASAPIInputDevice::impl_t
+struct WASAPIInputDevice::impl_t // NOLINT(cppcoreguidelines-special-member-functions)
 {
     WASAPIDevice device;
     IAudioCaptureClient* client { nullptr };
@@ -56,9 +56,7 @@ WASAPIInputDevice::WASAPIInputDevice(DeviceInfo&& info)
     createImpl(std::move(info));
 }
 
-WASAPIInputDevice::~WASAPIInputDevice()
-{
-}
+WASAPIInputDevice::~WASAPIInputDevice() = default;
 
 bool WASAPIInputDevice::open()
 {
@@ -71,11 +69,7 @@ bool WASAPIInputDevice::open()
     const auto hr = impl().device.audioClient()->GetService(__uuidof(IAudioCaptureClient),
                                                             reinterpret_cast<void**>(&impl().client));
 
-    if (hr != S_OK) {
-        return false;
-    }
-
-    return true;
+    return hr == S_OK;
 }
 
 bool WASAPIInputDevice::close()
@@ -139,7 +133,7 @@ bool WASAPIInputDevice::start()
             if (numFrames > 0 && !(flags & AUDCLNT_BUFFERFLAGS_SILENT)) {
                 AudioBuffer<float> captureBuffer(channels, numFrames);
 
-                const size_t samplesToCopy = numFrames * channels;
+                const size_t samplesToCopy = static_cast<size_t>(numFrames) * channels;
                 std::memcpy(captureBuffer.data().data(), data, samplesToCopy * sizeof(float));
 
                 if (impl().processCallback) {

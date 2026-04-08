@@ -27,8 +27,9 @@ namespace
 
 std::wstring getDeviceFriendlyName(IMMDevice* device)
 {
-    if (!device)
+    if (!device) {
         return {};
+    }
 
     IPropertyStore* props { nullptr };
     if (FAILED(device->OpenPropertyStore(STGM_READ, &props)) || !props) {
@@ -56,8 +57,9 @@ std::wstring getDeviceFriendlyName(IMMDevice* device)
 
 std::wstring getDeviceId(IMMDevice* device)
 {
-    if (!device)
+    if (!device) {
         return {};
+    }
 
     LPWSTR id { nullptr };
     if (FAILED(device->GetId(&id)) || !id) {
@@ -103,7 +105,7 @@ DeviceExplorer::DeviceExplorer()
     createImpl();
 
     CoCreateInstance(__uuidof(MMDeviceEnumerator),
-                     NULL,
+                     nullptr,
                      CLSCTX_ALL,
                      __uuidof(IMMDeviceEnumerator),
                      reinterpret_cast<void**>(&impl().enumerator));
@@ -111,16 +113,18 @@ DeviceExplorer::DeviceExplorer()
 
 DeviceExplorer::~DeviceExplorer()
 {
-    if (!impl().enumerator)
+    if (!impl().enumerator) {
         return;
+    }
 
     impl().enumerator->Release();
 }
 
 std::vector<DeviceDescriptor> DeviceExplorer::devices(slk::DeviceType type, slk::DeviceState state) const noexcept
 {
-    if (!impl().enumerator)
+    if (!impl().enumerator) {
         return {};
+    }
 
     IMMDeviceCollection* collection { nullptr };
     if (FAILED(impl().enumerator->EnumAudioEndpoints(
@@ -128,8 +132,9 @@ std::vector<DeviceDescriptor> DeviceExplorer::devices(slk::DeviceType type, slk:
         return {};
     }
 
-    if (!collection)
+    if (!collection) {
         return {};
+    }
 
     UINT count { 0 };
     if (FAILED(collection->GetCount(&count))) {
@@ -161,8 +166,9 @@ std::vector<DeviceDescriptor> DeviceExplorer::devices(slk::DeviceType type, slk:
 
 DeviceInfo DeviceExplorer::resolveDevice(const DeviceDescriptor& desc) const noexcept
 {
-    if (!impl().enumerator)
+    if (!impl().enumerator) {
         return {};
+    }
 
     DeviceInfo info;
     info.friendlyName = desc.name;
@@ -176,8 +182,9 @@ DeviceInfo DeviceExplorer::resolveDevice(const DeviceDescriptor& desc) const noe
 
 DeviceInfo DeviceExplorer::resolveDefaultDevice(DeviceType type, Purpose purpose) const noexcept
 {
-    if (!impl().enumerator)
+    if (!impl().enumerator) {
         return {};
+    }
 
     DeviceInfo info;
     info.type = type;

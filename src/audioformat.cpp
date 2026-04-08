@@ -41,9 +41,7 @@ AudioFormat::AudioFormat(uint16_t channels, uint32_t sampleRate, uint16_t bitsPe
     impl().type = audioFormat;
 }
 
-AudioFormat::~AudioFormat()
-{
-}
+AudioFormat::~AudioFormat() = default;
 
 AudioFormat::AudioFormat(AudioFormat&&) noexcept = default;
 AudioFormat& AudioFormat::operator=(AudioFormat&&) noexcept = default;

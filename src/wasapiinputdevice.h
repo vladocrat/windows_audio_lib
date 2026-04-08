@@ -30,7 +30,7 @@ class WASAPIInputDevice : public InputDevice
 public:
     WASAPIInputDevice(DeviceInfo&& info);
     WASAPIInputDevice() = delete;
-    ~WASAPIInputDevice();
+    ~WASAPIInputDevice() override;
 
     bool open() override;
     bool close() override;
@@ -38,11 +38,12 @@ public:
     bool stop() override;
 
     void setProcessCallback(ProcessCallback callback) override;
-    const AudioFormat& format() const override;
-    DeviceDescriptor descriptor() const override;
+    [[nodiscard]] const AudioFormat& format() const override;
+    [[nodiscard]] DeviceDescriptor descriptor() const override;
 
 private:
     DECLARE_PIMPL_EX(WASAPIInputDevice)
+    DECLARE_DEFAULT_MOVE(WASAPIInputDevice)
 };
 
 }

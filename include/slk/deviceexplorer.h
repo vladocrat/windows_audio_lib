@@ -33,14 +33,15 @@ public:
     DeviceExplorer();
     ~DeviceExplorer();
 
-    std::vector<DeviceDescriptor> devices(slk::DeviceType type = slk::DeviceType::All,
-                                          slk::DeviceState state = slk::DeviceState::All) const noexcept;
+    [[nodiscard]] std::vector<DeviceDescriptor> devices(slk::DeviceType type = slk::DeviceType::All,
+                                                        slk::DeviceState state = slk::DeviceState::All) const noexcept;
 
-    DeviceInfo resolveDevice(const DeviceDescriptor& desc) const noexcept;
-    DeviceInfo resolveDefaultDevice(slk::DeviceType type, slk::Purpose purpose) const noexcept;
+    [[nodiscard]] DeviceInfo resolveDevice(const DeviceDescriptor& desc) const noexcept;
+    [[nodiscard]] DeviceInfo resolveDefaultDevice(slk::DeviceType type, slk::Purpose purpose) const noexcept;
 
 private:
     DECLARE_PIMPL_EX(DeviceExplorer)
+    DECLARE_DEFAULT_MOVE(DeviceExplorer)
 };
 
 }

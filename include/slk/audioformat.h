@@ -26,7 +26,7 @@ namespace slk
 class AudioFormat
 {
 public:
-    enum class Type
+    enum class Type : uint8_t
     {
         PCM,
         FLOAT
@@ -36,13 +36,15 @@ public:
     AudioFormat(uint16_t channels, uint32_t sampleRate, uint16_t bitsPerSample, Type audioFormat);
     ~AudioFormat();
 
+    AudioFormat(const AudioFormat&) = delete;
+    AudioFormat& operator=(const AudioFormat&) = delete;
     AudioFormat(AudioFormat&&) noexcept;
     AudioFormat& operator=(AudioFormat&&) noexcept;
 
-    Type type() const;
-    uint32_t sampleRate() const;
-    uint32_t channels() const;
-    uint16_t bitsPerSample() const;
+    [[nodiscard]] Type type() const;
+    [[nodiscard]] uint32_t sampleRate() const;
+    [[nodiscard]] uint32_t channels() const;
+    [[nodiscard]] uint16_t bitsPerSample() const;
 
 private:
     DECLARE_PIMPL

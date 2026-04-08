@@ -16,19 +16,20 @@
 
 #pragma once
 
+#include <cstdint>
 #include <string>
 
 namespace slk
 {
 
-enum class DeviceType
+enum class DeviceType : uint8_t
 {
     Playback = 0,
     Record,
     All
 };
 
-enum class DeviceState
+enum class DeviceState : uint8_t
 {
     Active,
     Disable,
@@ -37,7 +38,7 @@ enum class DeviceState
     All
 };
 
-enum class Purpose
+enum class Purpose : uint8_t
 {
     Console = 0,
     Multimedia,

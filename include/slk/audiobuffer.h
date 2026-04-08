@@ -29,6 +29,7 @@ class AudioBuffer
 {
 public:
     AudioBuffer() = default;
+    ~AudioBuffer() = default;
 
     AudioBuffer(const uint32_t numChannels, const uint32_t numSamples)
     {
@@ -70,7 +71,7 @@ public:
     }
 
     template <typename Filter>
-    AudioBuffer& operator|(Filter&& filter)
+    AudioBuffer& operator|(Filter& filter)
     {
         filter(*this);
         return *this;
@@ -115,7 +116,7 @@ public:
         std::fill(_data.begin(), _data.end(), SampleType {});
     }
 
-    AudioBuffer<SampleType> mono() const
+    [[nodiscard]] AudioBuffer<SampleType> mono() const
     {
         if (_numChannels == 1) {
             return *this;
@@ -136,7 +137,7 @@ public:
         return result;
     }
 
-    AudioBuffer<SampleType> stereo() const
+    [[nodiscard]] AudioBuffer<SampleType> stereo() const
     {
         if (_numChannels == 2) {
             return *this;
@@ -156,8 +157,10 @@ public:
             }
 
         for (uint32_t i = 0; i < _numSamples; ++i) {
-            double left { 0.0 }, right { 0.0 };
-            uint32_t leftCount { 0 }, rightCount { 0 };
+            double left { 0.0 };
+            double right { 0.0 };
+            uint32_t leftCount { 0 };
+            uint32_t rightCount { 0 };
 
             for (uint32_t ch = 0; ch < _numChannels; ++ch) {
                 if (ch % 2 == 0)
@@ -184,36 +187,36 @@ public:
         return _data;
     }
 
-    const std::vector<SampleType>& data() const
+    [[nodiscard]] const std::vector<SampleType>& data() const
     {
         return _data;
     }
 
-    auto begin()
+    [[nodiscard]] auto begin()
     {
         return _data.begin();
     }
-    auto end()
+    [[nodiscard]] auto end()
     {
         return _data.end();
     }
-    auto begin() const
+    [[nodiscard]] auto begin() const
     {
         return _data.begin();
     }
-    auto end() const
+    [[nodiscard]] auto end() const
     {
         return _data.end();
     }
-    auto size() const
+    [[nodiscard]] auto size() const
     {
         return _data.size();
     }
-    auto channels() const
+    [[nodiscard]] auto channels() const
     {
         return _numChannels;
     }
-    auto numSamples() const
+    [[nodiscard]] auto numSamples() const
     {
         return _numSamples;
     }

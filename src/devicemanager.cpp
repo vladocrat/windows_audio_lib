@@ -34,9 +34,7 @@ DeviceManager::DeviceManager()
     createImpl();
 }
 
-DeviceManager::~DeviceManager()
-{
-}
+DeviceManager::~DeviceManager() = default;
 
 std::shared_ptr<InputDevice> DeviceManager::defaultInputDevice(Purpose purpose) const noexcept
 {

@@ -34,14 +34,15 @@ public:
     DeviceManager();
     ~DeviceManager();
 
-    std::shared_ptr<InputDevice> defaultInputDevice(slk::Purpose purpose = slk::Purpose::Multimedia) const noexcept;
-    std::shared_ptr<OutputDevice> defaultOutputDevice(slk::Purpose purpose = slk::Purpose::Multimedia) const noexcept;
+    [[nodiscard]] std::shared_ptr<InputDevice> defaultInputDevice(slk::Purpose purpose = slk::Purpose::Multimedia) const noexcept;
+    [[nodiscard]] std::shared_ptr<OutputDevice> defaultOutputDevice(slk::Purpose purpose = slk::Purpose::Multimedia) const noexcept;
 
-    std::shared_ptr<InputDevice> createInputDevice(const DeviceDescriptor& desc) const noexcept;
-    std::shared_ptr<OutputDevice> createOutputDevice(const DeviceDescriptor& desc) const noexcept;
+    [[nodiscard]] std::shared_ptr<InputDevice> createInputDevice(const DeviceDescriptor& desc) const noexcept;
+    [[nodiscard]] std::shared_ptr<OutputDevice> createOutputDevice(const DeviceDescriptor& desc) const noexcept;
 
 private:
-    DECLARE_PIMPL_EX(DeviceManager);
+    DECLARE_PIMPL_EX(DeviceManager)
+    DECLARE_DEFAULT_MOVE(DeviceManager)
 };
 
 }
