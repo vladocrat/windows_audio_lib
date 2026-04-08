@@ -14,12 +14,13 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-#include <slk/wasapiinputdevice.h>
+#include "wasapiinputdevice.h"
 
 #include <Windows.h>
 #include <cstring>
 
-#include <slk/wasapidevice.h>
+#include "wasapidevice.h"
+
 #include <slk/audioformat.h>
 
 namespace slk
@@ -181,4 +182,10 @@ const AudioFormat& WASAPIInputDevice::format() const
 {
     return impl().device.format();
 }
+
+DeviceDescriptor WASAPIInputDevice::descriptor() const
+{
+    return impl().device.descriptor();
+}
+
 }

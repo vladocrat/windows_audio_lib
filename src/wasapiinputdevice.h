@@ -16,28 +16,33 @@
 
 #pragma once
 
-#include <vector>
-
-#include <slk/general.h>
 #include "utils.h"
 
-namespace slk {
+#include <slk/inputdevice.h>
+
+namespace slk
+{
 
 struct DeviceInfo;
 
-class DeviceExplorer
+class WASAPIInputDevice : public InputDevice
 {
 public:
-    DeviceExplorer();
-    ~DeviceExplorer();
+    WASAPIInputDevice(DeviceInfo&& info);
+    WASAPIInputDevice() = delete;
+    ~WASAPIInputDevice();
 
-    std::vector<DeviceDescriptor> devices(slk::DeviceType type = slk::DeviceType::All, slk::DeviceState state = slk::DeviceState::All) const noexcept;
+    bool open() override;
+    bool close() override;
+    bool start() override;
+    bool stop() override;
 
-    DeviceInfo resolveDevice(const DeviceDescriptor& desc) const noexcept;
-    DeviceInfo resolveDefaultDevice(slk::DeviceType type, slk::Purpose purpose) const noexcept;
+    void setProcessCallback(ProcessCallback callback) override;
+    const AudioFormat& format() const override;
+    DeviceDescriptor descriptor() const override;
 
 private:
-    DECLARE_PIMPL_EX(DeviceExplorer)
+    DECLARE_PIMPL_EX(WASAPIInputDevice)
 };
 
 }

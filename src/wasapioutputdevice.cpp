@@ -14,14 +14,15 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-#include <slk/wasapioutputdevice.h>
+#include "wasapioutputdevice.h"
 
 #define NOMINMAX
 #include <Windows.h>
 #include <cstring>
 
+#include "wasapidevice.h"
+
 #include <slk/audioformat.h>
-#include <slk/wasapidevice.h>
 
 namespace slk
 {
@@ -197,6 +198,11 @@ void WASAPIOutputDevice::setProcessCallback(ProcessCallback callback)
 const AudioFormat& WASAPIOutputDevice::format() const
 {
     return impl().device.format();
+}
+
+DeviceDescriptor WASAPIOutputDevice::descriptor() const
+{
+    return impl().device.descriptor();
 }
 
 }

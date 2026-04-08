@@ -16,28 +16,32 @@
 
 #pragma once
 
-#include <vector>
+#include <string>
 
 #include <slk/general.h>
-#include "utils.h"
+
+#ifdef WIN32
+#include <wrl/client.h>
+#include <mmdeviceapi.h>
+#endif
 
 namespace slk {
 
-struct DeviceInfo;
-
-class DeviceExplorer
+struct DeviceInfo
 {
-public:
-    DeviceExplorer();
-    ~DeviceExplorer();
+    std::wstring friendlyName;
+    std::wstring deviceId;
+    slk::DeviceType type;
 
-    std::vector<DeviceDescriptor> devices(slk::DeviceType type = slk::DeviceType::All, slk::DeviceState state = slk::DeviceState::All) const noexcept;
+#ifdef WIN32
+    Microsoft::WRL::ComPtr<IMMDevice> device;
+#endif
 
-    DeviceInfo resolveDevice(const DeviceDescriptor& desc) const noexcept;
-    DeviceInfo resolveDefaultDevice(slk::DeviceType type, slk::Purpose purpose) const noexcept;
-
-private:
-    DECLARE_PIMPL_EX(DeviceExplorer)
+    DeviceInfo() = default;
+    DeviceInfo(DeviceInfo&&) = default;
+    DeviceInfo& operator=(DeviceInfo&&) = default;
+    DeviceInfo(const DeviceInfo&) = delete;
+    DeviceInfo& operator=(const DeviceInfo&) = delete;
 };
 
 }

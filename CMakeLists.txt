@@ -13,8 +13,7 @@ add_subdirectory(utils)
 
 find_package(Qt6 6.4 REQUIRED COMPONENTS Core)
 
-add_library(sound_capture
-    # Public headers (listed for IDE visibility and AUTOMOC scanning)
+set(PUBLIC_HEADERS
     include/slk/sound_capture.h
     include/slk/general.h
     include/slk/types.h
@@ -24,22 +23,27 @@ add_library(sound_capture
     include/slk/audiofile.h
     include/slk/ringbuffer.h
     include/slk/device.h
+    include/slk/inputdevice.h
+    include/slk/outputdevice.h
     include/slk/deviceexplorer.h
     include/slk/devicemanager.h
-    include/slk/wasapidevice.h
-    include/slk/wasapiinputdevice.h
-    include/slk/wasapioutputdevice.h
     include/slk/dsp/complex.h
     include/slk/dsp/dsp.h
     include/slk/dsp/filter.h
     include/slk/dsp/noise.h
     include/slk/dsp/window.h
+)
 
-    # Private headers (AUTOMOC must scan devicethread.h for Q_OBJECT)
+set(PRIVATE_HEADERS
     src/devicethread.h
     src/helpers.h
+    src/deviceinfo.h
+    src/wasapidevice.h
+    src/wasapiinputdevice.h
+    src/wasapioutputdevice.h
+)
 
-    # Sources
+set(SOURCES
     src/audiobuffer.cpp
     src/audiodata.cpp
     src/audiofile.cpp
@@ -59,6 +63,14 @@ add_library(sound_capture
     src/wasapioutputdevice.cpp
     src/window.cpp
 )
+
+add_library(sound_capture
+    ${PUBLIC_HEADERS}
+    ${PRIVATE_HEADERS}
+    ${SOURCES}
+)
+
+add_subdirectory(examples)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include/slk)
 

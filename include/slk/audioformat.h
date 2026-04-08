@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include <Audioclient.h>
+#include <cstdint>
 
 #include "utils.h"
 
@@ -36,14 +36,13 @@ public:
     AudioFormat(uint16_t channels, uint32_t sampleRate, uint16_t bitsPerSample, Type audioFormat);
     ~AudioFormat();
 
-    void setFormat(IAudioClient* const client);
+    AudioFormat(AudioFormat&&) noexcept;
+    AudioFormat& operator=(AudioFormat&&) noexcept;
 
     Type type() const;
-
-    void toFloat();
-
-    const WAVEFORMATEX* const format() const;
+    uint32_t sampleRate() const;
     uint32_t channels() const;
+    uint16_t bitsPerSample() const;
 
 private:
     DECLARE_PIMPL

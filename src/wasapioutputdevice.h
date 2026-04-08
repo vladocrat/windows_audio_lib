@@ -16,21 +16,18 @@
 
 #pragma once
 
-#include <functional>
-
 #include "utils.h"
-#include <slk/device.h>
-#include <slk/audiobuffer.h>
-#include <slk/ringbuffer.h>
+
+#include <slk/outputdevice.h>
 
 namespace slk
 {
 
-class WASAPIOutputDevice : public Device
+struct DeviceInfo;
+
+class WASAPIOutputDevice : public OutputDevice
 {
 public:
-    using ProcessCallback = std::function<void(AudioBuffer<float>&)>;
-
     WASAPIOutputDevice(DeviceInfo&& info);
     WASAPIOutputDevice() = delete;
     ~WASAPIOutputDevice();
@@ -40,9 +37,10 @@ public:
     bool start() override;
     bool stop() override;
 
-    void setSource(RingBuffer<float>& source);
-    void setProcessCallback(ProcessCallback callback);
-    const AudioFormat& format() const;
+    void setSource(RingBuffer<float>& source) override;
+    void setProcessCallback(ProcessCallback callback) override;
+    const AudioFormat& format() const override;
+    DeviceDescriptor descriptor() const override;
 
 private:
     DECLARE_PIMPL_EX(WASAPIOutputDevice)

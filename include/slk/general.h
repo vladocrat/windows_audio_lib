@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <string>
+
 namespace slk {
 
 enum class DeviceType
@@ -39,6 +41,14 @@ enum class Purpose
     Console = 0,
     Multimedia,
     Communications,
+};
+
+struct DeviceDescriptor
+{
+    std::wstring name;
+    std::wstring id;
+    DeviceType type = DeviceType::All;
+    DeviceState state = DeviceState::Active;
 };
 
 }

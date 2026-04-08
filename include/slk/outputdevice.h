@@ -16,28 +16,24 @@
 
 #pragma once
 
-#include <vector>
+#include <functional>
 
-#include <slk/general.h>
-#include "utils.h"
+#include <slk/device.h>
+#include <slk/ringbuffer.h>
 
-namespace slk {
-
-struct DeviceInfo;
-
-class DeviceExplorer
+namespace slk
 {
+
+class OutputDevice : public Device
+{
+    Q_OBJECT
 public:
-    DeviceExplorer();
-    ~DeviceExplorer();
+    using ProcessCallback = std::function<void(AudioBuffer<float>&)>;
 
-    std::vector<DeviceDescriptor> devices(slk::DeviceType type = slk::DeviceType::All, slk::DeviceState state = slk::DeviceState::All) const noexcept;
+    ~OutputDevice() override = default;
 
-    DeviceInfo resolveDevice(const DeviceDescriptor& desc) const noexcept;
-    DeviceInfo resolveDefaultDevice(slk::DeviceType type, slk::Purpose purpose) const noexcept;
-
-private:
-    DECLARE_PIMPL_EX(DeviceExplorer)
+    virtual void setProcessCallback(ProcessCallback callback) = 0;
+    virtual void setSource(RingBuffer<float>& source) = 0;
 };
 
 }

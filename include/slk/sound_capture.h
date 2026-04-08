@@ -29,13 +29,10 @@
 
 // Device abstraction
 #include <slk/device.h>
+#include <slk/inputdevice.h>
+#include <slk/outputdevice.h>
 #include <slk/deviceexplorer.h>
 #include <slk/devicemanager.h>
-
-// WASAPI implementations
-#include <slk/wasapidevice.h>
-#include <slk/wasapiinputdevice.h>
-#include <slk/wasapioutputdevice.h>
 
 // DSP
 #include <slk/dsp/complex.h>

@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include <slk/device.h>
 #include <slk/general.h>
 #include "utils.h"
 
@@ -24,15 +23,21 @@
 
 namespace slk {
 
+class InputDevice;
+class OutputDevice;
+
 class DeviceManager
 {
 public:
     DeviceManager();
     ~DeviceManager();
-    
-    std::shared_ptr<Device> defaultDevice(slk::DeviceType type, slk::Purpose purpose = slk::Purpose::Multimedia) const noexcept;
-    std::shared_ptr<Device> create(slk::DeviceType type, const std::string&) const noexcept;
-    
+
+    std::shared_ptr<InputDevice> defaultInputDevice(slk::Purpose purpose = slk::Purpose::Multimedia) const noexcept;
+    std::shared_ptr<OutputDevice> defaultOutputDevice(slk::Purpose purpose = slk::Purpose::Multimedia) const noexcept;
+
+    std::shared_ptr<InputDevice> createInputDevice(const DeviceDescriptor& desc) const noexcept;
+    std::shared_ptr<OutputDevice> createOutputDevice(const DeviceDescriptor& desc) const noexcept;
+
 private:
     DECLARE_PIMPL_EX(DeviceManager);
 };

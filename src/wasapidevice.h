@@ -16,34 +16,32 @@
 
 #pragma once
 
-#include <functional>
+#include <audioclient.h>
 
 #include "utils.h"
-#include "device.h"
-#include "audiobuffer.h"
+#include "deviceinfo.h"
+
+#include <slk/device.h>
 
 namespace slk
 {
 
-class WASAPIInputDevice : public Device
+class WASAPIDevice
 {
 public:
-    using ProcessCallback = std::function<void(AudioBuffer<float>&)>;
+    WASAPIDevice(DeviceInfo&& info);
+    virtual ~WASAPIDevice();
 
-    WASAPIInputDevice(DeviceInfo&& info);
-    WASAPIInputDevice() = delete;
-    ~WASAPIInputDevice();
+    bool open(const DWORD streamFlags);
 
-    bool open() override;
-    bool close() override;
-    bool start() override;
-    bool stop() override;
-
-    void setProcessCallback(ProcessCallback callback);
+    const DeviceInfo& info() const;
+    IAudioClient* const audioClient() const;
+    const AudioBuffer<BYTE>& buffer() const;
     const AudioFormat& format() const;
+    DeviceDescriptor descriptor() const;
 
 private:
-    DECLARE_PIMPL_EX(WASAPIInputDevice)
+    DECLARE_PIMPL_EX(WASAPIDevice)
 };
 
 }

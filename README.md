@@ -12,7 +12,7 @@ A C++20 Windows audio library built on WASAPI and Qt6. It provides device enumer
 | **C++ compiler** | MSVC 2019+ or Clang/LLVM with MSVC runtime | C++20 support required |
 | **CMake** | 3.5+ | Build system |
 | **Qt6** | 6.4+ | `Qt6::Core` component only |
-| **Windows SDK** | 10.0+ | For `mmdeviceapi.h`, `audioclient.h`, WRL COM headers |
+| **Windows SDK** | 10.0+ | Required for WASAPI backend |
 
 Qt6 can be installed via the [Qt Online Installer](https://www.qt.io/download) or vcpkg:
 ```
@@ -23,9 +23,9 @@ vcpkg install qt6-base
 
 ## What the library provides
 
-- **Device management** — enumerate, select, and create WASAPI audio devices
-- **Audio capture** — `WASAPIInputDevice` with an optional real-time `ProcessCallback`
-- **Audio playback** — `WASAPIOutputDevice` fed from a lock-free `RingBuffer<float>`
+- **Device management** — enumerate and select audio devices via platform-agnostic `DeviceDescriptor`
+- **Audio capture** — `InputDevice` with an optional real-time `ProcessCallback`
+- **Audio playback** — `OutputDevice` fed from a lock-free `RingBuffer<float>`
 - **WAV file I/O** — read/write WAV files with automatic format handling
 - **DSP** — DFT, low-pass filter, window functions (Hann, FlatTop), white noise generator
 - **Audio buffers** — multi-channel `AudioBuffer<T>`, lock-free `RingBuffer<T>`, functional filter piping (`buffer | filter`)
@@ -84,20 +84,37 @@ target_link_libraries(my_app PRIVATE sound_capture)
 
 ## Usage
 
+### Enumerating devices
+
+```cpp
+#include <slk/deviceexplorer.h>
+
+using namespace slk;
+
+DeviceExplorer explorer;
+auto inputDevices  = explorer.devices(DeviceType::Record, DeviceState::Active);
+auto outputDevices = explorer.devices(DeviceType::Playback, DeviceState::Active);
+
+for (const auto& desc : inputDevices) {
+    // desc.name — friendly name (std::wstring)
+    // desc.id   — opaque device identifier
+    // desc.type — DeviceType::Record
+}
+```
+
 ### Input device (recording)
 
 ```cpp
 #include <slk/sound_capture.h>
 // or include individually:
 // #include <slk/devicemanager.h>
-// #include <slk/wasapiinputdevice.h>
+// #include <slk/inputdevice.h>
 // #include <slk/dsp/filter.h>
 
 using namespace slk;
 
 DeviceManager manager;
-auto device = manager.defaultDevice(DeviceType::Record, Purpose::Multimedia);
-auto input  = std::dynamic_pointer_cast<WASAPIInputDevice>(device);
+auto input = manager.defaultInputDevice(Purpose::Multimedia);
 
 // Optional: process each buffer in-place before readyRead fires
 filter::LowPassFilter<float> lpf(5000.0f, input->format().sampleRate());
@@ -126,7 +143,7 @@ input->close();
 #include <slk/sound_capture.h>
 // or include individually:
 // #include <slk/devicemanager.h>
-// #include <slk/wasapioutputdevice.h>
+// #include <slk/outputdevice.h>
 // #include <slk/ringbuffer.h>
 
 using namespace slk;
@@ -134,9 +151,8 @@ using namespace slk;
 RingBuffer<float> ring(4096);
 
 DeviceManager manager;
-auto device = manager.defaultDevice(DeviceType::Playback, Purpose::Multimedia);
-auto output = std::dynamic_pointer_cast<WASAPIOutputDevice>(device);
-output->setSource(&ring);
+auto output = manager.defaultOutputDevice(Purpose::Multimedia);
+output->setSource(ring);
 
 output->open();
 output->start();
@@ -148,6 +164,25 @@ output->start();
 
 output->stop();
 output->close();
+```
+
+### Creating a specific device
+
+```cpp
+#include <slk/deviceexplorer.h>
+#include <slk/devicemanager.h>
+#include <slk/inputdevice.h>
+
+using namespace slk;
+
+DeviceExplorer explorer;
+auto devices = explorer.devices(DeviceType::Record, DeviceState::Active);
+
+DeviceManager manager;
+auto input = manager.createInputDevice(devices[0]);
+
+input->open();
+input->start();
 ```
 
 ### DSP: compute a frequency spectrum

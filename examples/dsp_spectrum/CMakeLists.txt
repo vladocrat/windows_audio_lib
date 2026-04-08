@@ -1,0 +1,2 @@
+add_executable(example_dsp_spectrum main.cpp)
+target_link_libraries(example_dsp_spectrum PRIVATE sound_capture)

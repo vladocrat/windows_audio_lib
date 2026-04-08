@@ -1,0 +1,2 @@
+add_executable(example_loopback main.cpp)
+target_link_libraries(example_loopback PRIVATE sound_capture)
