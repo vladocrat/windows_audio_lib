@@ -62,7 +62,11 @@ add_library(sound_capture
     ${SOURCES}
 )
 
-add_subdirectory(examples)
+option(BUILD_EXAMPLES OFF)
+
+if (${BUILD_EXAMPLES})
+    add_subdirectory(examples)
+endif()
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include/slk)
 

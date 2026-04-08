@@ -19,13 +19,14 @@
 #include <vector>
 
 #include <slk/general.h>
+
 #include "utils.h"
 
 namespace slk {
 
 struct DeviceInfo;
 
-class DeviceExplorer
+class DeviceExplorer final
 {
 public:
     DeviceExplorer();

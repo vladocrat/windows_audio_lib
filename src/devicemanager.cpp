@@ -15,8 +15,8 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include <slk/devicemanager.h>
-
 #include <slk/deviceexplorer.h>
+
 #include "deviceinfo.h"
 #include "wasapiinputdevice.h"
 #include "wasapioutputdevice.h"
@@ -46,7 +46,7 @@ std::shared_ptr<InputDevice> DeviceManager::defaultInputDevice(Purpose purpose) 
         return nullptr;
     }
 
-    return std::shared_ptr<WASAPIInputDevice>(new WASAPIInputDevice(std::move(info)));
+    return std::make_shared<WASAPIInputDevice>(std::move(info));
 }
 
 std::shared_ptr<OutputDevice> DeviceManager::defaultOutputDevice(Purpose purpose) const noexcept
@@ -57,7 +57,7 @@ std::shared_ptr<OutputDevice> DeviceManager::defaultOutputDevice(Purpose purpose
         return nullptr;
     }
 
-    return std::shared_ptr<WASAPIOutputDevice>(new WASAPIOutputDevice(std::move(info)));
+    return std::make_shared<WASAPIOutputDevice>(std::move(info));
 }
 
 std::shared_ptr<InputDevice> DeviceManager::createInputDevice(const DeviceDescriptor& desc) const noexcept
@@ -68,7 +68,7 @@ std::shared_ptr<InputDevice> DeviceManager::createInputDevice(const DeviceDescri
         return nullptr;
     }
 
-    return std::shared_ptr<WASAPIInputDevice>(new WASAPIInputDevice(std::move(info)));
+    return std::make_shared<WASAPIInputDevice>(std::move(info));
 }
 
 std::shared_ptr<OutputDevice> DeviceManager::createOutputDevice(const DeviceDescriptor& desc) const noexcept
@@ -79,7 +79,7 @@ std::shared_ptr<OutputDevice> DeviceManager::createOutputDevice(const DeviceDesc
         return nullptr;
     }
 
-    return std::shared_ptr<WASAPIOutputDevice>(new WASAPIOutputDevice(std::move(info)));
+    return std::make_shared<WASAPIOutputDevice>(std::move(info));
 }
 
 }

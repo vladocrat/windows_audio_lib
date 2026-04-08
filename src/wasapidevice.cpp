@@ -19,13 +19,16 @@
 #include <initguid.h>
 #include <mmdeviceapi.h>
 
+#include <chrono>
+
 #include <slk/audioformat.h>
 
 namespace
 {
+
 using namespace std::chrono_literals;
 
-const auto BUFFER_LATENCY = 10ms;
+static constexpr const auto BUFFER_LATENCY = 10ms;
 
 WAVEFORMATEX* negotiateFloatFormat(IAudioClient* client)
 {

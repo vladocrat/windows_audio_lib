@@ -13,9 +13,11 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 #include <slk/deviceexplorer.h>
 
 #include <mmdeviceapi.h>
+
 #include <unordered_map>
 
 #include "deviceinfo.h"
@@ -97,11 +99,7 @@ DeviceExplorer::DeviceExplorer()
 {
     createImpl();
 
-    CoCreateInstance(__uuidof(MMDeviceEnumerator),
-                     NULL,
-                     CLSCTX_ALL,
-                     __uuidof(IMMDeviceEnumerator),
-                     reinterpret_cast<void**>(&impl().enumerator));
+    CoCreateInstance(__uuidof(MMDeviceEnumerator), NULL, CLSCTX_ALL, __uuidof(IMMDeviceEnumerator), reinterpret_cast<void**>(&impl().enumerator));
 }
 
 DeviceExplorer::~DeviceExplorer()

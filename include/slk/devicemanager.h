@@ -16,17 +16,18 @@
 
 #pragma once
 
-#include <slk/general.h>
-#include "utils.h"
-
 #include <memory>
+
+#include <slk/general.h>
+
+#include "utils.h"
 
 namespace slk {
 
 class InputDevice;
 class OutputDevice;
 
-class DeviceManager
+class DeviceManager final
 {
 public:
     DeviceManager();
