@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <array>
 #include <span>
 #include <numbers>
 #include <cmath>
@@ -33,7 +34,7 @@ enum class WindowType : uint8_t
 struct Hann
 {
     //! Can't make constexpr due to std::cos not being constexpr till c++ 26
-    template<class T, size_t N>
+    template <class T, size_t N>
     static std::array<T, N> generate()
     {
         std::array<T, N> array;
@@ -47,7 +48,7 @@ struct Hann
     }
 };
 
-template<WindowType Type, class SampleType, size_t windowSize>
+template <WindowType Type, class SampleType, size_t windowSize>
 struct Window
 {
     constexpr Window() = default;
@@ -55,9 +56,8 @@ struct Window
     void apply(std::span<SampleType> source, std::span<SampleType> dest) const
     {
         size_t i { 0 };
-        std::transform(source.begin(), source.end(), dest.begin(), [&](const auto value) {
-            return value * coefficients[i++];
-        });
+        std::transform(
+            source.begin(), source.end(), dest.begin(), [&](const auto value) { return value * coefficients[i++]; });
     }
 
     constexpr SampleType operator[](const size_t ix) const
@@ -77,8 +77,5 @@ private:
 
     inline static std::array<SampleType, windowSize> coefficients = generateCoefficients();
 };
-
-
-
 
 }

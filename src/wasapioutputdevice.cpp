@@ -14,19 +14,20 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-#include <slk/wasapioutputdevice.h>
+#include "wasapioutputdevice.h"
 
-#define NOMINMAX
 #include <Windows.h>
+
 #include <cstring>
 
+#include "wasapidevice.h"
+
 #include <slk/audioformat.h>
-#include <slk/wasapidevice.h>
 
 namespace slk
 {
 
-struct WASAPIOutputDevice::impl_t
+struct WASAPIOutputDevice::impl_t // NOLINT(cppcoreguidelines-special-member-functions)
 {
     WASAPIDevice device;
     IAudioRenderClient* client { nullptr };
@@ -37,8 +38,7 @@ struct WASAPIOutputDevice::impl_t
     std::atomic_bool shouldStop { false };
     HANDLE deviceEvent { nullptr };
 
-    impl_t(DeviceInfo&& info)
-        : device { std::move(info) }
+    impl_t(DeviceInfo&& info) : device { std::move(info) }
     {
     }
 
@@ -51,7 +51,7 @@ struct WASAPIOutputDevice::impl_t
         if (deviceEvent) {
             CloseHandle(deviceEvent);
         }
-    }
+    }    
 };
 
 WASAPIOutputDevice::WASAPIOutputDevice(DeviceInfo&& info)
@@ -59,9 +59,7 @@ WASAPIOutputDevice::WASAPIOutputDevice(DeviceInfo&& info)
     createImpl(std::move(info));
 }
 
-WASAPIOutputDevice::~WASAPIOutputDevice()
-{
-}
+WASAPIOutputDevice::~WASAPIOutputDevice() = default;
 
 bool WASAPIOutputDevice::open()
 {
@@ -70,7 +68,8 @@ bool WASAPIOutputDevice::open()
         return false;
     }
 
-    auto hr = impl().device.audioClient()->GetService(__uuidof(IAudioRenderClient), reinterpret_cast<void**>(&impl().client));
+    auto hr =
+        impl().device.audioClient()->GetService(__uuidof(IAudioRenderClient), reinterpret_cast<void**>(&impl().client));
 
     if (hr != S_OK) {
         return false;
@@ -78,11 +77,7 @@ bool WASAPIOutputDevice::open()
 
     hr = impl().device.audioClient()->GetBufferSize(&impl().bufferFrameCount);
 
-    if (hr != S_OK) {
-        return false;
-    }
-
-    return true;
+    return hr == S_OK;
 }
 
 bool WASAPIOutputDevice::close()
@@ -150,7 +145,7 @@ bool WASAPIOutputDevice::start()
         AudioBuffer<float> tempBuffer(channels, numFramesAvailable);
 
         if (impl().source) {
-            const size_t maxSamples = numFramesAvailable * channels;
+            const size_t maxSamples = static_cast<size_t>(numFramesAvailable) * channels;
             impl().source->read(std::span<float>(tempBuffer.data().data(), maxSamples), maxSamples);
         }
 
@@ -158,7 +153,7 @@ bool WASAPIOutputDevice::start()
             impl().processCallback(tempBuffer);
         }
 
-        const size_t bytesToWrite = numFramesAvailable * channels * sizeof(float);
+        const size_t bytesToWrite = static_cast<size_t>(numFramesAvailable) * channels * sizeof(float);
         std::memcpy(data, tempBuffer.data().data(), bytesToWrite);
 
         impl().client->ReleaseBuffer(numFramesAvailable, 0);
@@ -197,6 +192,11 @@ void WASAPIOutputDevice::setProcessCallback(ProcessCallback callback)
 const AudioFormat& WASAPIOutputDevice::format() const
 {
     return impl().device.format();
+}
+
+DeviceDescriptor WASAPIOutputDevice::descriptor() const
+{
+    return impl().device.descriptor();
 }
 
 }

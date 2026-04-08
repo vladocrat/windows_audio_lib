@@ -61,7 +61,7 @@ public:
         uint16_t audioFormat;
         uint16_t numChannels;
         uint32_t sampleRateHz;
-        uint32_t bytesPerSec; //! sampleRate * bytesPerBlock
+        uint32_t bytesPerSec;   //! sampleRate * bytesPerBlock
         uint16_t bytesPerBlock; //! numChannels * bitsPerSample / 8
         uint16_t bitsPerSample;
 
@@ -102,13 +102,11 @@ public:
                     _file.skip(chunkSize - 16);
                 }
                 foundFmt = true;
-            }
-            else if (chunkID == 0x61746164) { // "data"
+            } else if (chunkID == 0x61746164) { // "data"
                 header.dataBlocID = chunkID;
                 header.dataSize = chunkSize;
                 foundData = true;
-            }
-            else {
+            } else {
                 _file.skip(chunkSize);
             }
         }
@@ -126,7 +124,7 @@ public:
     bool isOpen() const;
 
 private:
-    template<class T>
+    template <class T>
     void readVal(T* val)
     {
         _file.read(reinterpret_cast<char*>(val), sizeof(T));

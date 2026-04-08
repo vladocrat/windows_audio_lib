@@ -1,0 +1,2 @@
+add_executable(example_capture main.cpp)
+target_link_libraries(example_capture PRIVATE sound_capture)

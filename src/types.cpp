@@ -23,7 +23,6 @@ namespace dsp
 namespace literals
 {
 
-
 }
 }
 }

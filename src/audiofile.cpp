@@ -32,8 +32,7 @@ File::~File()
 
 bool File::open(const std::string& name, const Access access)
 {
-    switch (access)
-    {
+    switch (access) {
     case Access::Read:
         _file.open(name, std::ios::in | std::ios::binary);
         break;
@@ -74,23 +73,23 @@ void File::skip(size_t bytes)
     _file.seekg(bytes, std::ios::cur);
 }
 
-WAV::WAV(const std::string& name, const Access access)
-    : _file(name, access)
+WAV::WAV(const std::string& name, const Access access) : _file(name, access)
 {
-
 }
 
 void WAV::write(const AudioBuffer<float>& data)
 {
-
 }
 
 AudioFormat WAV::format() const
 {
-    return AudioFormat(_header.numChannels, _header.sampleRateHz, _header.bitsPerSample, _header.audioFormat == 1 ? AudioFormat::Type::PCM : AudioFormat::Type::FLOAT);
+    return AudioFormat(_header.numChannels,
+                       _header.sampleRateHz,
+                       _header.bitsPerSample,
+                       _header.audioFormat == 1 ? AudioFormat::Type::PCM : AudioFormat::Type::FLOAT);
 }
 
-const WAV::Header &WAV::header() const
+const WAV::Header& WAV::header() const
 {
     return _header;
 }

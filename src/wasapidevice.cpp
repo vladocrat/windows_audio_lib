@@ -14,33 +14,84 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-#include <slk/wasapidevice.h>
-#include <slk/audiodata.h>
-#include <slk/audioformat.h>
+#include "wasapidevice.h"
 
+#include <initguid.h>
 #include <mmdeviceapi.h>
+
+#include <chrono>
+
+#include <slk/audioformat.h>
 
 namespace
 {
+
 using namespace std::chrono_literals;
 
-const auto BUFFER_LATENCY = 10ms;
+constexpr auto BUFFER_LATENCY = 10ms;
+
+WAVEFORMATEX* negotiateFloatFormat(IAudioClient* client)
+{
+    WAVEFORMATEX* mixFormat { nullptr };
+    client->GetMixFormat(&mixFormat);
+
+    if (!mixFormat) {
+        return nullptr;
+    }
+
+    WAVEFORMATEXTENSIBLE floatFormat;
+    floatFormat.Format.wFormatTag = WAVE_FORMAT_EXTENSIBLE;
+    floatFormat.Format.nChannels = mixFormat->nChannels;
+    floatFormat.Format.nSamplesPerSec = mixFormat->nSamplesPerSec;
+    floatFormat.Format.wBitsPerSample = 32;
+    floatFormat.Format.nBlockAlign = (floatFormat.Format.nChannels * 32) / 8;
+    floatFormat.Format.nAvgBytesPerSec = floatFormat.Format.nSamplesPerSec * floatFormat.Format.nBlockAlign;
+    floatFormat.Format.cbSize = 22;
+    floatFormat.Samples.wValidBitsPerSample = 32;
+    floatFormat.SubFormat = KSDATAFORMAT_SUBTYPE_IEEE_FLOAT;
+
+    if (mixFormat->wFormatTag == WAVE_FORMAT_EXTENSIBLE) {
+        floatFormat.dwChannelMask = reinterpret_cast<WAVEFORMATEXTENSIBLE*>(mixFormat)->dwChannelMask;
+    } else {
+        floatFormat.dwChannelMask =
+            (mixFormat->nChannels == 2) ? (SPEAKER_FRONT_LEFT | SPEAKER_FRONT_RIGHT) : SPEAKER_FRONT_CENTER;
+    }
+
+    WAVEFORMATEX* closestMatch { nullptr };
+    const HRESULT hr = client->IsFormatSupported(
+        AUDCLNT_SHAREMODE_SHARED, reinterpret_cast<WAVEFORMATEX*>(&floatFormat), &closestMatch);
+
+    WAVEFORMATEX* result { nullptr };
+
+    if (hr == S_OK) {
+        result = static_cast<WAVEFORMATEX*>(CoTaskMemAlloc(sizeof(WAVEFORMATEXTENSIBLE)));
+        memcpy(result, &floatFormat, sizeof(WAVEFORMATEXTENSIBLE));
+        CoTaskMemFree(mixFormat);
+    } else {
+        result = mixFormat;
+    }
+
+    if (closestMatch) {
+        CoTaskMemFree(closestMatch);
+    }
+
+    return result;
+}
 }
 
 namespace slk
 {
 
-struct WASAPIDevice::impl_t
+struct WASAPIDevice::impl_t // NOLINT(cppcoreguidelines-special-member-functions)
 {
     DeviceInfo info;
     IAudioClient* client { nullptr };
     AudioBuffer<BYTE> data;
     AudioFormat format;
+    WAVEFORMATEX* rawFormat { nullptr };
 
-    impl_t(DeviceInfo&& info)
-        : info { std::move(info) }
+    impl_t(DeviceInfo&& info) : info { std::move(info) }
     {
-
     }
 
     ~impl_t()
@@ -49,6 +100,9 @@ struct WASAPIDevice::impl_t
             client->Release();
         }
 
+        if (rawFormat) {
+            CoTaskMemFree(rawFormat);
+        }
     }
 };
 
@@ -57,28 +111,40 @@ WASAPIDevice::WASAPIDevice(DeviceInfo&& info)
     createImpl(std::move(info));
 }
 
-WASAPIDevice::~WASAPIDevice()
-{
-
-}
+WASAPIDevice::~WASAPIDevice() = default;
 
 bool WASAPIDevice::open(const DWORD streamFlags)
 {
-    auto res = info().device->Activate(__uuidof(IAudioClient), CLSCTX_ALL, NULL, reinterpret_cast<void**>(&impl().client));
+    auto res =
+        info().device->Activate(__uuidof(IAudioClient), CLSCTX_ALL, nullptr, reinterpret_cast<void**>(&impl().client));
 
     if (res != S_OK) {
         return false;
     }
 
-    impl().format.setFormat(impl().client);
+    impl().rawFormat = negotiateFloatFormat(impl().client);
 
-    res = impl().client->Initialize(AUDCLNT_SHAREMODE_SHARED, streamFlags, BUFFER_LATENCY.count(), 0, impl().format.format(), NULL);
-
-    if (res != S_OK) {
+    if (!impl().rawFormat) {
         return false;
     }
 
-    return true;
+    auto* fmt = impl().rawFormat;
+    auto type = AudioFormat::Type::PCM;
+
+    if (fmt->wFormatTag == WAVE_FORMAT_EXTENSIBLE) {
+        auto* ext = reinterpret_cast<WAVEFORMATEXTENSIBLE*>(fmt);
+        if (ext->SubFormat == KSDATAFORMAT_SUBTYPE_IEEE_FLOAT) {
+            type = AudioFormat::Type::FLOAT;
+        }
+    }
+
+    impl().format = AudioFormat(
+        static_cast<uint16_t>(fmt->nChannels), fmt->nSamplesPerSec, static_cast<uint16_t>(fmt->wBitsPerSample), type);
+
+    res = impl().client->Initialize(
+        AUDCLNT_SHAREMODE_SHARED, streamFlags, BUFFER_LATENCY.count(), 0, impl().rawFormat, nullptr);
+
+    return res == S_OK;
 }
 
 const DeviceInfo& WASAPIDevice::info() const
@@ -86,7 +152,7 @@ const DeviceInfo& WASAPIDevice::info() const
     return impl().info;
 }
 
-IAudioClient* const WASAPIDevice::audioClient() const
+IAudioClient* WASAPIDevice::audioClient() const
 {
     return impl().client;
 }
@@ -99,6 +165,15 @@ const AudioBuffer<BYTE>& WASAPIDevice::buffer() const
 const AudioFormat& WASAPIDevice::format() const
 {
     return impl().format;
+}
+
+DeviceDescriptor WASAPIDevice::descriptor() const
+{
+    DeviceDescriptor desc;
+    desc.name = impl().info.friendlyName;
+    desc.id = impl().info.deviceId;
+    desc.type = impl().info.type;
+    return desc;
 }
 
 }

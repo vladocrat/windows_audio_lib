@@ -13,7 +13,6 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
 #pragma once
 
 #include <vector>
@@ -23,19 +22,22 @@ namespace slk
 namespace dsp
 {
 
-template<class Type>
+template <class Type>
 class Complex
 {
 public:
-    Complex(Type real, Type img)
-        : _real { real }
-        , _img { img }
+    Complex(Type real, Type img) : _real { real }, _img { img }
     {
-
     }
 
-    Type real() const { return _real; }
-    Type img() const { return _img; }
+    Type real() const
+    {
+        return _real;
+    }
+    Type img() const
+    {
+        return _img;
+    }
 
     Complex<Type> operator+(const Complex<Type>& other)
     {
@@ -63,8 +65,7 @@ private:
     Type _img;
 };
 
-
-template<class Type>
+template <class Type>
 using Spectrum = std::vector<Complex<Type>>;
 
 }

@@ -15,12 +15,14 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include <slk/devicemanager.h>
-
 #include <slk/deviceexplorer.h>
-#include <slk/wasapiinputdevice.h>
-#include <slk/wasapioutputdevice.h>
 
-namespace slk {
+#include "deviceinfo.h"
+#include "wasapiinputdevice.h"
+#include "wasapioutputdevice.h"
+
+namespace slk
+{
 
 struct DeviceManager::impl_t
 {
@@ -32,38 +34,50 @@ DeviceManager::DeviceManager()
     createImpl();
 }
 
-DeviceManager::~DeviceManager()
+DeviceManager::~DeviceManager() = default;
+
+std::shared_ptr<InputDevice> DeviceManager::defaultInputDevice(Purpose purpose) const noexcept
 {
-    
-}
+    auto info = impl().explorer.resolveDefaultDevice(DeviceType::Record, purpose);
 
-std::shared_ptr<Device> DeviceManager::defaultDevice(DeviceType type, Purpose purpose) const noexcept
-{
-
-    auto device = impl().explorer.defaultDevice(type, purpose);
-
-    DeviceInfo info;
-    info.device = std::move(device);
-    info.friendlyName = impl().explorer.deviceFriendlyName(info.device.Get());
-    info.type = type;
-
-#ifdef WIN32
-    switch (type) {
-    case DeviceType::Playback:
-        return std::shared_ptr<WASAPIOutputDevice>(new WASAPIOutputDevice(std::move(info)));
-    case DeviceType::Record:
-        return std::shared_ptr<WASAPIInputDevice>(new WASAPIInputDevice(std::move(info)));
-    case DeviceType::All:
-        break;
+    if (!info.device) {
+        return nullptr;
     }
-#endif
 
-    return nullptr;
+    return std::make_shared<WASAPIInputDevice>(std::move(info));
 }
 
-std::shared_ptr<Device> DeviceManager::create(DeviceType type, const std::string& deviceName) const noexcept
+std::shared_ptr<OutputDevice> DeviceManager::defaultOutputDevice(Purpose purpose) const noexcept
 {
-    return {};
+    auto info = impl().explorer.resolveDefaultDevice(DeviceType::Playback, purpose);
+
+    if (!info.device) {
+        return nullptr;
+    }
+
+    return std::make_shared<WASAPIOutputDevice>(std::move(info));
+}
+
+std::shared_ptr<InputDevice> DeviceManager::createInputDevice(const DeviceDescriptor& desc) const noexcept
+{
+    auto info = impl().explorer.resolveDevice(desc);
+
+    if (!info.device) {
+        return nullptr;
+    }
+
+    return std::make_shared<WASAPIInputDevice>(std::move(info));
+}
+
+std::shared_ptr<OutputDevice> DeviceManager::createOutputDevice(const DeviceDescriptor& desc) const noexcept
+{
+    auto info = impl().explorer.resolveDevice(desc);
+
+    if (!info.device) {
+        return nullptr;
+    }
+
+    return std::make_shared<WASAPIOutputDevice>(std::move(info));
 }
 
 }

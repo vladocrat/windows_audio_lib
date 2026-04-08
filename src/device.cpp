@@ -13,16 +13,11 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-#include "slk/device.h"
+#include <slk/device.h>
 
 namespace slk
 {
 
-
-Device::~Device()
-{
-    
-}
-
+Device::~Device() = default;
 
 }

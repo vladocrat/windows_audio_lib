@@ -14,32 +14,35 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-#include <slk/audiodata.h>
+#pragma once
+
+#include <audioclient.h>
+
+#include "utils.h"
+#include "deviceinfo.h"
+
+#include <slk/device.h>
 
 namespace slk
 {
 
-template <class SampleData>
-AudioData<SampleData>::AudioData()
+class WASAPIDevice
 {
-}
+public:
+    WASAPIDevice(DeviceInfo&& info);
+    virtual ~WASAPIDevice();
 
-template <class SampleData>
-uint32_t AudioData<SampleData>::bufferSize() const
-{
-    return _bufferSize;
-}
+    bool open(DWORD streamFlags);
 
-template <class SampleData>
-void AudioData<SampleData>::setBufferSize(const uint32_t size)
-{
-    _bufferSize = size;
-}
+    [[nodiscard]] const DeviceInfo& info() const;
+    [[nodiscard]] IAudioClient* audioClient() const;
+    [[nodiscard]] const AudioBuffer<BYTE>& buffer() const;
+    [[nodiscard]] const AudioFormat& format() const;
+    [[nodiscard]] DeviceDescriptor descriptor() const;
 
-template <class SampleData>
-AudioData<float> AudioData<SampleData>::toFloat()
-{
-    _data = AudioBuffer<float>::fromWASAPI(_data);
-}
+private:
+    DECLARE_PIMPL_EX(WASAPIDevice)
+    DECLARE_DEFAULT_MOVE(WASAPIDevice)
+};
 
 }

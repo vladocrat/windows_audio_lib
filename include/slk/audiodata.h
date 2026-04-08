@@ -23,7 +23,7 @@ namespace slk
 
 class AudioFormat;
 
-template<class SampleData>
+template <class SampleData>
 class AudioData
 {
 public:

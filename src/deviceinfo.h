@@ -16,31 +16,34 @@
 
 #pragma once
 
-#include <QThread>
-#include <windows.h>
-#include <mmdeviceapi.h>
-#include <audioclient.h>
+#include <string>
 
-#include "utils.h"
+#include <slk/general.h>
+
+#ifdef WIN32
+#include <wrl/client.h>
+#include <mmdeviceapi.h>
+#endif
 
 namespace slk
 {
 
-class DeviceThread : public QThread
+struct DeviceInfo
 {
-    Q_OBJECT
-public:
-    DeviceThread(IAudioCaptureClient* captureClient, HANDLE hEvent, UINT32 bufferFrameSize, WAVEFORMATEX* format);
-    ~DeviceThread();
+    std::wstring friendlyName;
+    std::wstring deviceId;
+    slk::DeviceType type { DeviceType::All };
 
-signals:
-    void audioDataReady(BYTE* data, UINT32 frames, DWORD status);
+#ifdef WIN32
+    Microsoft::WRL::ComPtr<IMMDevice> device;
+#endif
 
-protected:
-    void run() override;
-
-private:
-    DECLARE_PIMPL_EX(DeviceThread)
+    DeviceInfo() = default;
+    ~DeviceInfo() = default;
+    DeviceInfo(DeviceInfo&&) noexcept = default;
+    DeviceInfo& operator=(DeviceInfo&&) noexcept = default;
+    DeviceInfo(const DeviceInfo&) = delete;
+    DeviceInfo& operator=(const DeviceInfo&) = delete;
 };
 
 }

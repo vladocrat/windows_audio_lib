@@ -28,19 +28,19 @@ namespace slk
 namespace dsp
 {
 
-template<class Type>
+template <class Type>
 using FrequencyMagnitude = std::pair<Type, Type>;
 
-template<class Type>
+template <class Type>
 using FreqMags = std::vector<FrequencyMagnitude<Type>>;
 
-template<class T>
+template <class T>
 T magnitude(const Complex<T>& sample)
 {
     return std::sqrt(std::pow(sample.real(), 2) + std::pow(sample.img(), 2));
 }
 
-template<class SampleType>
+template <class SampleType>
 Spectrum<SampleType> dft(const AudioBuffer<float>& buffer, const float sampleRate)
 {
     const auto N = buffer.size();
@@ -52,7 +52,7 @@ Spectrum<SampleType> dft(const AudioBuffer<float>& buffer, const float sampleRat
         Complex<SampleType> value(0, 0);
 
         for (size_t n = 0; n < N; n++) {
-            const auto angle =  -2.0f * std::numbers::pi * k * n / N;
+            const auto angle = -2.0f * std::numbers::pi * k * n / N;
 
             const auto real = std::cos(angle);
             const auto img = std::sin(angle);
@@ -65,7 +65,7 @@ Spectrum<SampleType> dft(const AudioBuffer<float>& buffer, const float sampleRat
     return ret;
 }
 
-template<class Type>
+template <class Type>
 FreqMags<Type> freqMag(const Spectrum<Type>& spectrum, const float sampleRate)
 {
     FreqMags<Type> ret;

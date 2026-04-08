@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include <Audioclient.h>
+#include <cstdint>
 
 #include "utils.h"
 
@@ -26,7 +26,7 @@ namespace slk
 class AudioFormat
 {
 public:
-    enum class Type
+    enum class Type : uint8_t
     {
         PCM,
         FLOAT
@@ -36,14 +36,15 @@ public:
     AudioFormat(uint16_t channels, uint32_t sampleRate, uint16_t bitsPerSample, Type audioFormat);
     ~AudioFormat();
 
-    void setFormat(IAudioClient* const client);
+    AudioFormat(const AudioFormat&) = delete;
+    AudioFormat& operator=(const AudioFormat&) = delete;
+    AudioFormat(AudioFormat&&) noexcept;
+    AudioFormat& operator=(AudioFormat&&) noexcept;
 
-    Type type() const;
-
-    void toFloat();
-
-    const WAVEFORMATEX* const format() const;
-    uint32_t channels() const;
+    [[nodiscard]] Type type() const;
+    [[nodiscard]] uint32_t sampleRate() const;
+    [[nodiscard]] uint32_t channels() const;
+    [[nodiscard]] uint16_t bitsPerSample() const;
 
 private:
     DECLARE_PIMPL

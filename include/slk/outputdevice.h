@@ -18,32 +18,21 @@
 
 #include <functional>
 
-#include "utils.h"
-#include "device.h"
-#include "audiobuffer.h"
+#include <slk/device.h>
+#include <slk/ringbuffer.h>
 
 namespace slk
 {
 
-class WASAPIInputDevice : public Device
+class OutputDevice : public Device
 {
 public:
     using ProcessCallback = std::function<void(AudioBuffer<float>&)>;
 
-    WASAPIInputDevice(DeviceInfo&& info);
-    WASAPIInputDevice() = delete;
-    ~WASAPIInputDevice();
+    ~OutputDevice() override = default;
 
-    bool open() override;
-    bool close() override;
-    bool start() override;
-    bool stop() override;
-
-    void setProcessCallback(ProcessCallback callback);
-    const AudioFormat& format() const;
-
-private:
-    DECLARE_PIMPL_EX(WASAPIInputDevice)
+    virtual void setProcessCallback(ProcessCallback callback) = 0;
+    virtual void setSource(RingBuffer<float>& source) = 0;
 };
 
 }

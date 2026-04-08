@@ -23,6 +23,10 @@ struct impl_t; \
     template<typename... Args> \
     void createImpl(Args&&... args) { assert(!_impl); _impl = std::make_unique<impl_t>(std::forward<Args>(args)...); }
 
+#define DECLARE_DEFAULT_MOVE(classname) \
+classname(classname&&) noexcept = default; \
+classname& operator=(classname&&) noexcept = default;
+
 #define DECLARE_PIMPL_EX(classname) \
 DECLARE_PIMPL \
 classname& operator=(const classname&) = delete; \

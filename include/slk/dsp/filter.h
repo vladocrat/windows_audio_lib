@@ -25,17 +25,14 @@ namespace slk
 namespace filter
 {
 
-template<class T>
+template <class T>
 struct LowPassFilter
 {
     float _cutOff;
     float _sampleRate;
 
-    LowPassFilter(const float cutOff, const float sampleRate)
-        : _cutOff { cutOff }
-        , _sampleRate { sampleRate }
+    LowPassFilter(const float cutOff, const float sampleRate) : _cutOff { cutOff }, _sampleRate { sampleRate }
     {
-
     }
 
     void operator()(AudioBuffer<T>& buffer) const
