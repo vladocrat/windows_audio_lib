@@ -1,40 +1,38 @@
 // Capture example — records from the default microphone for 5 seconds,
 // applying an 8 kHz low-pass filter to each buffer.
 
-#include "Windows.h"
+#include <Windows.h>
 
-#include <QCoreApplication>
-#include <QTimer>
-#include <QDebug>
+#include <iostream>
 #include <thread>
+#include <chrono>
+#include <atomic>
 
 #include <slk/devicemanager.h>
 #include <slk/inputdevice.h>
 #include <slk/dsp/filter.h>
 #include <slk/audioformat.h>
 
-int main(int argc, char* argv[])
+int main()
 {
-    QCoreApplication app(argc, argv);
-
     CoInitializeEx(nullptr, COINIT_MULTITHREADED);
 
     slk::DeviceManager manager;
     auto input = manager.defaultInputDevice();
 
     if (!input) {
-        qCritical() << "No recording device found";
+        std::cerr << "No recording device found\n";
         return 1;
     }
 
     if (!input->open()) {
-        qCritical() << "Failed to open input device";
+        std::cerr << "Failed to open input device\n";
         return 1;
     }
 
     const float sampleRate = static_cast<float>(input->format().sampleRate());
     const uint32_t channels = input->format().channels();
-    qDebug() << "Sample rate:" << sampleRate << "  Channels:" << channels;
+    std::cout << "Sample rate: " << sampleRate << "  Channels: " << channels << "\n";
 
     slk::filter::LowPassFilter<float> lpf(8000.0f, sampleRate);
     std::atomic<int> bufferCount { 0 };
@@ -43,22 +41,20 @@ int main(int argc, char* argv[])
         buf | lpf;
         const int n = ++bufferCount;
         if (n % 50 == 0)
-            qDebug() << "buffers:" << n << " samples per buffer:" << buf.numSamples();
+            std::cout << "buffers: " << n << "  samples per buffer: " << buf.numSamples() << "\n";
     });
 
-    // start() blocks in its capture loop — run it on a background thread
     std::thread captureThread([&input]() { input->start(); });
 
-    qDebug() << "Recording for 5 seconds...";
+    std::cout << "Recording for 5 seconds...\n";
+    std::this_thread::sleep_for(std::chrono::seconds(5));
 
-    QTimer::singleShot(5000, &app, [&]() {
-        input->stop();
-        captureThread.join();
-        input->close();
-        qDebug() << "Done. Total buffers received:" << bufferCount.load();
-        CoUninitialize();
-        app.quit();
-    });
+    input->stop();
+    captureThread.join();
+    input->close();
 
-    return app.exec();
+    std::cout << "Done. Total buffers received: " << bufferCount.load() << "\n";
+
+    CoUninitialize();
+    return 0;
 }

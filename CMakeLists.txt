@@ -5,13 +5,7 @@ project(sound_capture LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set(CMAKE_AUTOMOC ON)
-set(CMAKE_AUTOUIC ON)
-set(CMAKE_AUTORCC ON)
-
 add_subdirectory(utils)
-
-find_package(Qt6 6.4 REQUIRED COMPONENTS Core)
 
 set(PUBLIC_HEADERS
     include/slk/sound_capture.h
@@ -35,7 +29,6 @@ set(PUBLIC_HEADERS
 )
 
 set(PRIVATE_HEADERS
-    src/devicethread.h
     src/helpers.h
     src/deviceinfo.h
     src/wasapidevice.h
@@ -52,7 +45,6 @@ set(SOURCES
     src/device.cpp
     src/deviceexplorer.cpp
     src/devicemanager.cpp
-    src/devicethread.cpp
     src/dsp.cpp
     src/filter.cpp
     src/noise.cpp
@@ -83,6 +75,5 @@ target_include_directories(sound_capture
 
 target_link_libraries(sound_capture
     PUBLIC
-        Qt6::Core
         utils_lib
 )

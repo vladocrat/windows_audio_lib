@@ -1,10 +1,13 @@
 // DSP spectrum example — captures from the default microphone and prints
 // the top 5 frequency peaks every 1024 samples using a Hann-windowed DFT.
 
-#include <QCoreApplication>
-#include <QTimer>
-#include <QDebug>
+#include <Windows.h>
+
+#include <iostream>
+#include <thread>
+#include <chrono>
 #include <algorithm>
+#include <vector>
 
 #include <slk/devicemanager.h>
 #include <slk/inputdevice.h>
@@ -14,47 +17,45 @@
 
 static constexpr size_t kWindowSize = 1024;
 
-int main(int argc, char* argv[])
+int main()
 {
-    QCoreApplication app(argc, argv);
+    CoInitializeEx(nullptr, COINIT_MULTITHREADED);
 
     slk::DeviceManager manager;
     auto input = manager.defaultInputDevice(slk::Purpose::Multimedia);
 
     if (!input) {
-        qCritical() << "No recording device found";
+        std::cerr << "No recording device found\n";
         return 1;
     }
 
     if (!input->open()) {
-        qCritical() << "Failed to open input device";
+        std::cerr << "Failed to open input device\n";
         return 1;
     }
 
     const float sampleRate = static_cast<float>(input->format().sampleRate());
-    qDebug() << "Sample rate:" << sampleRate;
+    std::cout << "Sample rate: " << sampleRate << "\n";
 
     slk::Window<slk::WindowType::Hann, float, kWindowSize> window;
+    std::vector<float> accumulator;
+    accumulator.reserve(kWindowSize * 2);
 
-    QObject::connect(input.get(), &slk::Device::readyRead,
-        [&](const slk::AudioBuffer<float>& buf) {
-            // Mix down to mono and ensure we have enough samples
-            auto mono = buf.mono();
-            if (mono.numSamples() < kWindowSize)
-                return;
+    input->setProcessCallback([&](slk::AudioBuffer<float>& buf) {
+        auto mono = buf.mono();
+        const auto* src = mono.data().data();
+        accumulator.insert(accumulator.end(), src, src + mono.numSamples());
 
-            // Apply Hann window into a separate buffer
+        while (accumulator.size() >= kWindowSize) {
             slk::AudioBuffer<float> windowed(1, kWindowSize);
             window.apply(
-                std::span<float>(mono.data().data(), kWindowSize),
+                std::span<float>(accumulator.data(), kWindowSize),
                 std::span<float>(windowed.data().data(), kWindowSize)
             );
 
-            // Compute DFT and convert to frequency/magnitude pairs
             auto spectrum  = slk::dsp::dft<float>(windowed, sampleRate);
             auto freqMags  = slk::dsp::freqMag<float>(spectrum, sampleRate);
 
-            // Sort descending by magnitude and print the top 5 peaks
             std::partial_sort(freqMags.begin(),
                               freqMags.begin() + std::min<size_t>(5, freqMags.size()),
                               freqMags.end(),
@@ -62,19 +63,23 @@ int main(int argc, char* argv[])
                                   return a.second > b.second;
                               });
 
-            qDebug() << "--- top 5 frequencies ---";
+            std::cout << "--- top 5 frequencies ---\n";
             for (size_t i = 0; i < 5 && i < freqMags.size(); ++i)
-                qDebug() << freqMags[i].first << "Hz  mag:" << freqMags[i].second;
-        });
+                std::cout << freqMags[i].first << " Hz  mag: " << freqMags[i].second << "\n";
 
-    input->start();
-    qDebug() << "Analysing for 5 seconds (1024-point Hann-windowed DFT)...";
-
-    QTimer::singleShot(5000, &app, [&]() {
-        input->stop();
-        input->close();
-        app.quit();
+            accumulator.erase(accumulator.begin(), accumulator.begin() + kWindowSize);
+        }
     });
 
-    return app.exec();
+    std::thread captureThread([&input]() { input->start(); });
+
+    std::cout << "Analysing for 5 seconds (1024-point Hann-windowed DFT)...\n";
+    std::this_thread::sleep_for(std::chrono::seconds(5));
+
+    input->stop();
+    captureThread.join();
+    input->close();
+
+    CoUninitialize();
+    return 0;
 }

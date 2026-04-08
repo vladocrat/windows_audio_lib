@@ -16,17 +16,14 @@
 
 #pragma once
 
-#include <QObject>
-
 #include <slk/general.h>
 #include <slk/audiobuffer.h>
 #include <slk/audioformat.h>
 
 namespace slk {
 
-class Device : public QObject
+class Device
 {
-    Q_OBJECT
 public:
     virtual ~Device();
 
@@ -37,9 +34,6 @@ public:
 
     virtual const AudioFormat& format() const = 0;
     virtual DeviceDescriptor descriptor() const = 0;
-
-signals:
-    void readyRead(const AudioBuffer<float>&);
 };
 
 } //! slk

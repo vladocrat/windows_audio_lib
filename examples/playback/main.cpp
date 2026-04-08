@@ -1,9 +1,11 @@
 // Playback example — generates white noise, fills a ring buffer,
 // and plays it through the default output device for 3 seconds.
 
-#include <QCoreApplication>
-#include <QTimer>
-#include <QDebug>
+#include <Windows.h>
+
+#include <iostream>
+#include <thread>
+#include <chrono>
 
 #include <slk/devicemanager.h>
 #include <slk/outputdevice.h>
@@ -11,26 +13,26 @@
 #include <slk/dsp/noise.h>
 #include <slk/audioformat.h>
 
-int main(int argc, char* argv[])
+int main()
 {
-    QCoreApplication app(argc, argv);
+    CoInitializeEx(nullptr, COINIT_MULTITHREADED);
 
     slk::DeviceManager manager;
     auto output = manager.defaultOutputDevice(slk::Purpose::Multimedia);
 
     if (!output) {
-        qCritical() << "No playback device found";
+        std::cerr << "No playback device found\n";
         return 1;
     }
 
     if (!output->open()) {
-        qCritical() << "Failed to open output device";
+        std::cerr << "Failed to open output device\n";
         return 1;
     }
 
     const float sampleRate = static_cast<float>(output->format().sampleRate());
     const uint32_t channels = output->format().channels();
-    qDebug() << "Sample rate:" << sampleRate << "  Channels:" << channels;
+    std::cout << "Sample rate: " << sampleRate << "  Channels: " << channels << "\n";
 
     // Pre-fill the ring buffer with 3 seconds of soft white noise
     const size_t totalSamples = static_cast<size_t>(sampleRate) * channels * 3;
@@ -41,14 +43,16 @@ int main(int argc, char* argv[])
     ring.write(std::span<const float>(noise.data().data(), noise.size()));
 
     output->setSource(ring);
-    output->start();
-    qDebug() << "Playing white noise for 3 seconds...";
 
-    QTimer::singleShot(3000, &app, [&]() {
-        output->stop();
-        output->close();
-        app.quit();
-    });
+    std::thread playbackThread([&output]() { output->start(); });
 
-    return app.exec();
+    std::cout << "Playing white noise for 3 seconds...\n";
+    std::this_thread::sleep_for(std::chrono::seconds(3));
+
+    output->stop();
+    playbackThread.join();
+    output->close();
+
+    CoUninitialize();
+    return 0;
 }

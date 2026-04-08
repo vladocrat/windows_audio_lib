@@ -26,7 +26,6 @@ namespace slk
 
 class OutputDevice : public Device
 {
-    Q_OBJECT
 public:
     using ProcessCallback = std::function<void(AudioBuffer<float>&)>;
 

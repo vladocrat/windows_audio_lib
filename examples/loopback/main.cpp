@@ -2,13 +2,11 @@
 // lets you select one of each, then routes captured audio directly
 // to the output so you can hear yourself in real time.
 
-#include "Windows.h"
+#include <Windows.h>
 
-#include <QCoreApplication>
-#include <QTimer>
-#include <QDebug>
-#include <thread>
 #include <iostream>
+#include <thread>
+#include <string>
 
 #include <slk/deviceexplorer.h>
 #include <slk/devicemanager.h>
@@ -21,10 +19,10 @@ namespace
 
 slk::DeviceDescriptor pickDevice(const std::vector<slk::DeviceDescriptor>& devices, const char* label)
 {
-    qDebug() << "\nAvailable" << label << "devices:";
+    std::cout << "\nAvailable " << label << " devices:\n";
 
     for (size_t i = 0; i < devices.size(); ++i) {
-        qDebug() << " [" << i << "]" << QString::fromStdWString(devices[i].name);
+        std::wcout << L" [" << i << L"] " << devices[i].name << L"\n";
     }
 
     std::cout << "Select " << label << " device index (Enter for default): ";
@@ -48,10 +46,8 @@ slk::DeviceDescriptor pickDevice(const std::vector<slk::DeviceDescriptor>& devic
 
 }
 
-int main(int argc, char* argv[])
+int main()
 {
-    QCoreApplication app(argc, argv);
-
     CoInitializeEx(nullptr, COINIT_MULTITHREADED);
 
     slk::DeviceExplorer explorer;
@@ -67,32 +63,32 @@ int main(int argc, char* argv[])
     auto output = outputDesc.id.empty() ? manager.defaultOutputDevice() : manager.createOutputDevice(outputDesc);
 
     if (!input) {
-        qCritical() << "Failed to create input device";
+        std::cerr << "Failed to create input device\n";
         return 1;
     }
 
     if (!output) {
-        qCritical() << "Failed to create output device";
+        std::cerr << "Failed to create output device\n";
         return 1;
     }
 
     if (!input->open()) {
-        qCritical() << "Failed to open input device";
+        std::cerr << "Failed to open input device\n";
         return 1;
     }
 
     if (!output->open()) {
-        qCritical() << "Failed to open output device";
+        std::cerr << "Failed to open output device\n";
         return 1;
     }
 
-    qDebug() << "Input  —" << QString::fromStdWString(input->descriptor().name)
-             << "| rate:" << input->format().sampleRate()
-             << "channels:" << input->format().channels();
+    std::wcout << L"Input  — " << input->descriptor().name
+               << L" | rate: " << input->format().sampleRate()
+               << L" channels: " << input->format().channels() << L"\n";
 
-    qDebug() << "Output —" << QString::fromStdWString(output->descriptor().name)
-             << "| rate:" << output->format().sampleRate()
-             << "channels:" << output->format().channels();
+    std::wcout << L"Output — " << output->descriptor().name
+               << L" | rate: " << output->format().sampleRate()
+               << L" channels: " << output->format().channels() << L"\n";
 
     // Ring buffer sized for ~1 second at 48 kHz stereo (power of 2)
     slk::RingBuffer<float> ring(131072);
@@ -106,7 +102,7 @@ int main(int argc, char* argv[])
     std::thread captureThread([&]() { input->start(); });
     std::thread playbackThread([&]() { output->start(); });
 
-    qDebug() << "Loopback running — press Enter to stop...";
+    std::cout << "Loopback running — press Enter to stop...\n";
     std::string dummy;
     std::getline(std::cin, dummy);
 

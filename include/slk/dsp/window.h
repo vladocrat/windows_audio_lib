@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <array>
 #include <span>
 #include <numbers>
 #include <cmath>

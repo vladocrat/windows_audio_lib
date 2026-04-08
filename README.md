@@ -1,6 +1,6 @@
 # windows_audio_lib
 
-A C++20 Windows audio library built on WASAPI and Qt6. It provides device enumeration, low-latency audio capture and playback, WAV file I/O, and a suite of DSP tools (DFT, filtering, windowing, noise generation) under the `slk` namespace.
+A C++20 Windows audio library built on WASAPI. It provides device enumeration, low-latency audio capture and playback, WAV file I/O, and a suite of DSP tools (DFT, filtering, windowing, noise generation) under the `slk` namespace.
 
 ---
 
@@ -11,13 +11,7 @@ A C++20 Windows audio library built on WASAPI and Qt6. It provides device enumer
 | **Windows** | 10 or later | WASAPI is required |
 | **C++ compiler** | MSVC 2019+ or Clang/LLVM with MSVC runtime | C++20 support required |
 | **CMake** | 3.5+ | Build system |
-| **Qt6** | 6.4+ | `Qt6::Core` component only |
 | **Windows SDK** | 10.0+ | Required for WASAPI backend |
-
-Qt6 can be installed via the [Qt Online Installer](https://www.qt.io/download) or vcpkg:
-```
-vcpkg install qt6-base
-```
 
 ---
 
@@ -56,13 +50,6 @@ FetchContent_MakeAvailable(windows_audio_lib)
 
 ```cmake
 target_link_libraries(your_target PRIVATE sound_capture)
-```
-
-### Step 3 — make Qt6 discoverable
-
-If Qt is not on the system path, point CMake to it before the first `find_package` call:
-```
-cmake -DCMAKE_PREFIX_PATH="C:/Qt/6.x.x/msvc2019_64" ..
 ```
 
 ### Minimal CMakeLists.txt
@@ -116,24 +103,21 @@ using namespace slk;
 DeviceManager manager;
 auto input = manager.defaultInputDevice(Purpose::Multimedia);
 
-// Optional: process each buffer in-place before readyRead fires
+// Optional: process each buffer in-place
 filter::LowPassFilter<float> lpf(5000.0f, input->format().sampleRate());
 input->setProcessCallback([&](AudioBuffer<float>& buf) {
     buf | lpf;
 });
 
-// Receive processed buffers via Qt signal
-QObject::connect(input.get(), &Device::readyRead,
-    [](const AudioBuffer<float>& buf) {
-        // buf contains interleaved float samples ready for further use
-    });
-
 input->open();
-input->start();
 
-// ... run Qt event loop ...
+// start() blocks — run it on a background thread
+std::thread captureThread([&]() { input->start(); });
+
+// ... do work ...
 
 input->stop();
+captureThread.join();
 input->close();
 ```
 
@@ -155,14 +139,17 @@ auto output = manager.defaultOutputDevice(Purpose::Multimedia);
 output->setSource(ring);
 
 output->open();
-output->start();
 
-// Producer thread writes samples into the ring buffer:
+// start() blocks — run it on a background thread
+std::thread playbackThread([&]() { output->start(); });
+
+// Producer writes samples into the ring buffer:
 //   ring.write(samples.data(), samples.size());
 
-// ... run Qt event loop ...
+// ... do work ...
 
 output->stop();
+playbackThread.join();
 output->close();
 ```
 
