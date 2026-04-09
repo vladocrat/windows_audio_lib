@@ -13,6 +13,7 @@
 #include <slk/inputdevice.h>
 #include <slk/outputdevice.h>
 #include <slk/ringbuffer.h>
+#include <slk/dsp/filter.h>
 
 namespace
 {
@@ -94,7 +95,13 @@ int main()
 
     output->setSource(ring);
 
-    input->setProcessCallback([&](slk::AudioBuffer<float>& buf) { ring.write(buf.data()); });
+    slk::filter::SimpleGainFilter<float> gain(5.f);
+    slk::filter::SimpleSoftLimiter<float> limiter(0.9f);
+
+    input->setProcessCallback([&](slk::AudioBuffer<float>& buf) {
+        buf | gain | limiter;
+        ring.write(buf.data());
+    });
 
     std::thread captureThread([&]() { input->start(); });
     std::thread playbackThread([&]() { output->start(); });

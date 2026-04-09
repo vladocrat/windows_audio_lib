@@ -17,28 +17,27 @@
 #pragma once
 
 #include <algorithm>
+#include <cmath>
 
 #include <slk/audiobuffer.h>
 
-namespace slk
-{
-namespace filter
+namespace slk::filter
 {
 
 template <class T>
 struct LowPassFilter
 {
-    float _cutOff;
-    float _sampleRate;
+    float cutOff;
+    float sampleRate;
 
-    LowPassFilter(const float cutOff, const float sampleRate) : _cutOff { cutOff }, _sampleRate { sampleRate }
+    LowPassFilter(const float cutOff, const float sampleRate) noexcept : cutOff { cutOff }, sampleRate { sampleRate }
     {
     }
 
     void operator()(AudioBuffer<T>& buffer) const
     {
         const auto alpha = [&]() {
-            auto temp = _cutOff / _sampleRate;
+            auto temp = cutOff / sampleRate;
             temp = std::clamp(temp, 0.0f, 1.0f);
             return temp;
         }();
@@ -52,5 +51,46 @@ struct LowPassFilter
     }
 };
 
-}
+template <class T>
+struct SimpleGainFilter
+{
+    float gain;
+
+    SimpleGainFilter(const float gain) noexcept : gain { gain }
+    {
+    }
+
+    void operator()(AudioBuffer<T>& buffer) const
+    {
+        const auto numChannels = buffer.channels();
+        const auto numSamples = buffer.numSamples();
+
+        for (uint32_t i = 0; i < numSamples; ++i) {
+            for (uint32_t ch = 0; ch < numChannels; ++ch) {
+                buffer[i * numChannels + ch] = static_cast<T>(buffer[i * numChannels + ch] * gain);
+            }
+        }
+    }
+};
+
+template <class T>
+struct SimpleSoftLimiter
+{
+    float threshold;
+
+    SimpleSoftLimiter(const float threshold) noexcept : threshold { threshold }
+    {
+    }
+
+    void operator()(AudioBuffer<T>& buffer) const
+    {
+        for (auto& sample : buffer) {
+            if (std::abs(sample) > threshold) {
+                const float sign = sample >= 0 ? 1.0f : -1.0f;
+                sample = static_cast<T>(sign * (threshold + std::tanh(sample - sign * threshold)));
+            }
+        }
+    }
+};
+
 }
