@@ -72,7 +72,7 @@ FreqMags<Type> freqMag(const Spectrum<Type>& spectrum, const float sampleRate)
     ret.reserve(spectrum.size());
 
     for (size_t k = 0; k < spectrum.size(); k++) {
-        const auto freq = k * sampleRate / spectrum.size();
+        const auto freq = k * sampleRate / (2.0f * spectrum.size());
         const auto mag = magnitude(spectrum[k]);
         ret.emplace_back(std::make_pair(freq, mag));
     }

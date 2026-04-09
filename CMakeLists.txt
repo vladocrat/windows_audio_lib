@@ -68,6 +68,14 @@ if (${BUILD_EXAMPLES})
     add_subdirectory(examples)
 endif()
 
+option(BUILD_TESTS "Build unit tests" OFF)
+
+if (BUILD_TESTS)
+    enable_testing()
+    include(cmake/GoogleTest.cmake)
+    add_subdirectory(tests)
+endif()
+
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include/slk)
 
 target_include_directories(sound_capture
