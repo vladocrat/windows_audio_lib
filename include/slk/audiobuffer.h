@@ -145,16 +145,14 @@ public:
 
         AudioBuffer<SampleType> result(2, _numSamples);
 
-        if (_numChannels == 1)
-            [[likely]]
-            {
-                for (uint32_t i = 0; i < _numSamples; ++i) {
-                    result[i * 2] = _data[i];
-                    result[i * 2 + 1] = _data[i];
-                }
-
-                return result;
+        if (_numChannels == 1) [[likely]] {
+            for (uint32_t i = 0; i < _numSamples; ++i) {
+                result[i * 2] = _data[i];
+                result[i * 2 + 1] = _data[i];
             }
+
+            return result;
+        }
 
         for (uint32_t i = 0; i < _numSamples; ++i) {
             double left { 0.0 };
@@ -163,13 +161,10 @@ public:
             uint32_t rightCount { 0 };
 
             for (uint32_t ch = 0; ch < _numChannels; ++ch) {
-                if (ch % 2 == 0)
-                    [[likely]]
-                    {
-                        left += static_cast<double>(_data[i * _numChannels + ch]);
-                        ++leftCount;
-                    }
-                else {
+                if (ch % 2 == 0) [[likely]] {
+                    left += static_cast<double>(_data[i * _numChannels + ch]);
+                    ++leftCount;
+                } else {
                     right += static_cast<double>(_data[i * _numChannels + ch]);
                     ++rightCount;
                 }
