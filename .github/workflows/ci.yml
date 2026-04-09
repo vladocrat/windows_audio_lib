@@ -45,9 +45,7 @@ jobs:
           sudo apt-get install -y clang-format-18
 
       - name: Check formatting
-        run: |
-          files=$(find include src -name '*.h' -o -name '*.cpp')
-          clang-format-18 --dry-run --Werror $files
+        run: CLANG_FORMAT=clang-format-18 bash scripts/run-clang-format.sh check
 
   clang-tidy:
     strategy:
@@ -69,6 +67,4 @@ jobs:
         run: cmake -B build -DBUILD_TESTS=ON -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 
       - name: Run clang-tidy
-        run: |
-          files=$(find include src -name '*.h' -o -name '*.cpp')
-          clang-tidy-18 -p build --warnings-as-errors='bugprone-use-after-move,bugprone-dangling-handle,bugprone-undefined-memory-manipulation' $files
+        run: CLANG_TIDY=clang-tidy-18 bash scripts/run-clang-tidy.sh build

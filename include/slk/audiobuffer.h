@@ -87,7 +87,7 @@ public:
         }
 
         std::transform(acc.begin(), acc.end(), _data.begin(), [](SampleType s) {
-            return std::clamp(s, SampleType{-1}, SampleType{1});
+            return std::clamp(s, SampleType { -1 }, SampleType { 1 });
         });
 
         return *this;
