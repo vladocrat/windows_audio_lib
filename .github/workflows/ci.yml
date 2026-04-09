@@ -58,13 +58,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Setup MSVC
+        uses: ilammy/msvc-dev-cmd@v1
+
       - name: Install LLVM
         uses: KyleMayes/install-llvm-action@v2
         with:
           version: "18"
 
       - name: Configure with compile commands
-        run: cmake -B build -DBUILD_TESTS=ON -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+        run: cmake -B build -G Ninja -DBUILD_TESTS=ON -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 
       - name: Run clang-tidy
         shell: bash
