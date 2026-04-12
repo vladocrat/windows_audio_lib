@@ -12,7 +12,6 @@ set(PUBLIC_HEADERS
     include/slk/general.h
     include/slk/types.h
     include/slk/audiobuffer.h
-    include/slk/audiodata.h
     include/slk/audioformat.h
     include/slk/audiofile.h
     include/slk/ringbuffer.h
@@ -29,7 +28,6 @@ set(PUBLIC_HEADERS
 )
 
 set(PRIVATE_HEADERS
-    src/helpers.h
     src/deviceinfo.h
     src/wasapidevice.h
     src/wasapiinputdevice.h
@@ -38,7 +36,6 @@ set(PRIVATE_HEADERS
 
 set(SOURCES
     src/audiobuffer.cpp
-    src/audiodata.cpp
     src/audiofile.cpp
     src/audioformat.cpp
     src/complex.cpp

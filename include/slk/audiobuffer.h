@@ -128,7 +128,7 @@ public:
             double mixed { 0.0 };
 
             for (uint32_t ch = 0; ch < _numChannels; ++ch) {
-                mixed += static_cast<double>(_data[i * _numChannels + ch]);
+                mixed += static_cast<double>(_data[(i * _numChannels) + ch]);
             }
 
             result[i] = static_cast<SampleType>(mixed / _numChannels);
@@ -148,7 +148,7 @@ public:
         if (_numChannels == 1) [[likely]] {
             for (uint32_t i = 0; i < _numSamples; ++i) {
                 result[i * 2] = _data[i];
-                result[i * 2 + 1] = _data[i];
+                result[(i * 2) + 1] = _data[i];
             }
 
             return result;
@@ -162,16 +162,16 @@ public:
 
             for (uint32_t ch = 0; ch < _numChannels; ++ch) {
                 if (ch % 2 == 0) [[likely]] {
-                    left += static_cast<double>(_data[i * _numChannels + ch]);
+                    left += static_cast<double>(_data[(i * _numChannels) + ch]);
                     ++leftCount;
                 } else {
-                    right += static_cast<double>(_data[i * _numChannels + ch]);
+                    right += static_cast<double>(_data[(i * _numChannels) + ch]);
                     ++rightCount;
                 }
             }
 
             result[i * 2] = static_cast<SampleType>(left / leftCount);
-            result[i * 2 + 1] = static_cast<SampleType>(right / rightCount);
+            result[(i * 2) + 1] = static_cast<SampleType>(right / rightCount);
         }
 
         return result;
@@ -191,26 +191,32 @@ public:
     {
         return _data.begin();
     }
+
     [[nodiscard]] auto end()
     {
         return _data.end();
     }
+
     [[nodiscard]] auto begin() const
     {
         return _data.begin();
     }
+
     [[nodiscard]] auto end() const
     {
         return _data.end();
     }
+
     [[nodiscard]] auto size() const
     {
         return _data.size();
     }
+
     [[nodiscard]] auto channels() const
     {
         return _numChannels;
     }
+
     [[nodiscard]] auto numSamples() const
     {
         return _numSamples;
