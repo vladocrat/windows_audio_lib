@@ -14,7 +14,7 @@ if [ ! -f "$BUILD_DIR/compile_commands.json" ]; then
     exit 1
 fi
 
-files=$(find "$ROOT_DIR/include" "$ROOT_DIR/src" -name '*.h' -o -name '*.cpp')
+files=$(find "$ROOT_DIR/src" -name '*.cpp')
 
 if [ -z "$files" ]; then
     echo "No source files found"
