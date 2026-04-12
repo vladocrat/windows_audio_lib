@@ -1,6 +1,8 @@
 #include <gtest/gtest.h>
 
+#ifdef _WIN32
 #include <Windows.h>
+#endif
 
 #include <slk/deviceexplorer.h>
 #include <slk/devicemanager.h>
@@ -18,12 +20,16 @@ class DeviceTest : public ::testing::Test
 protected:
     void SetUp() override
     {
+#ifdef _WIN32
         CoInitializeEx(nullptr, COINIT_MULTITHREADED);
+#endif
     }
 
     void TearDown() override
     {
+#ifdef _WIN32
         CoUninitialize();
+#endif
     }
 };
 

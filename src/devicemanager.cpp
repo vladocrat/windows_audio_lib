@@ -18,8 +18,11 @@
 #include <slk/deviceexplorer.h>
 
 #include "deviceinfo.h"
+
+#ifdef WIN32
 #include "wasapiinputdevice.h"
 #include "wasapioutputdevice.h"
+#endif
 
 namespace slk
 {
@@ -44,7 +47,11 @@ std::shared_ptr<InputDevice> DeviceManager::defaultInputDevice(Purpose purpose) 
         return nullptr;
     }
 
+#ifdef WIN32
     return std::make_shared<WASAPIInputDevice>(std::move(info));
+#else
+    return nullptr;
+#endif
 }
 
 std::shared_ptr<OutputDevice> DeviceManager::defaultOutputDevice(Purpose purpose) const noexcept
@@ -55,7 +62,11 @@ std::shared_ptr<OutputDevice> DeviceManager::defaultOutputDevice(Purpose purpose
         return nullptr;
     }
 
+#ifdef WIN32
     return std::make_shared<WASAPIOutputDevice>(std::move(info));
+#else
+    return nullptr;
+#endif
 }
 
 std::shared_ptr<InputDevice> DeviceManager::createInputDevice(const DeviceDescriptor& desc) const noexcept
@@ -66,7 +77,11 @@ std::shared_ptr<InputDevice> DeviceManager::createInputDevice(const DeviceDescri
         return nullptr;
     }
 
+#ifdef WIN32
     return std::make_shared<WASAPIInputDevice>(std::move(info));
+#else
+    return nullptr;
+#endif
 }
 
 std::shared_ptr<OutputDevice> DeviceManager::createOutputDevice(const DeviceDescriptor& desc) const noexcept
@@ -77,7 +92,11 @@ std::shared_ptr<OutputDevice> DeviceManager::createOutputDevice(const DeviceDesc
         return nullptr;
     }
 
+#ifdef WIN32
     return std::make_shared<WASAPIOutputDevice>(std::move(info));
+#else
+    return nullptr;
+#endif
 }
 
 }

@@ -16,11 +16,11 @@
 
 #include <slk/deviceexplorer.h>
 
-#include <mmdeviceapi.h>
-
-#include <unordered_map>
-
 #include "deviceinfo.h"
+
+#ifdef WIN32
+#include <mmdeviceapi.h>
+#include <unordered_map>
 
 namespace
 {
@@ -90,38 +90,46 @@ UINT getDeviceStateBitFlag(slk::DeviceState state)
     return {};
 }
 
-}
+} // namespace
+#endif
 
 namespace slk
 {
 
 struct DeviceExplorer::impl_t
 {
+#ifdef WIN32
     IMMDeviceEnumerator* enumerator { nullptr };
+#endif
 };
 
 DeviceExplorer::DeviceExplorer()
 {
     createImpl();
 
+#ifdef WIN32
     CoCreateInstance(__uuidof(MMDeviceEnumerator),
                      nullptr,
                      CLSCTX_ALL,
                      __uuidof(IMMDeviceEnumerator),
                      reinterpret_cast<void**>(&impl().enumerator));
+#endif
 }
 
 DeviceExplorer::~DeviceExplorer()
 {
+#ifdef WIN32
     if (!impl().enumerator) {
         return;
     }
 
     impl().enumerator->Release();
+#endif
 }
 
 std::vector<DeviceDescriptor> DeviceExplorer::devices(slk::DeviceType type, slk::DeviceState state) const noexcept
 {
+#ifdef WIN32
     if (!impl().enumerator) {
         return {};
     }
@@ -162,10 +170,14 @@ std::vector<DeviceDescriptor> DeviceExplorer::devices(slk::DeviceType type, slk:
 
     collection->Release();
     return result;
+#else
+    return {};
+#endif
 }
 
 DeviceInfo DeviceExplorer::resolveDevice(const DeviceDescriptor& desc) const noexcept
 {
+#ifdef WIN32
     if (!impl().enumerator) {
         return {};
     }
@@ -178,10 +190,14 @@ DeviceInfo DeviceExplorer::resolveDevice(const DeviceDescriptor& desc) const noe
     impl().enumerator->GetDevice(desc.id.c_str(), &info.device);
 
     return info;
+#else
+    return {};
+#endif
 }
 
 DeviceInfo DeviceExplorer::resolveDefaultDevice(DeviceType type, Purpose purpose) const noexcept
 {
+#ifdef WIN32
     if (!impl().enumerator) {
         return {};
     }
@@ -198,6 +214,9 @@ DeviceInfo DeviceExplorer::resolveDefaultDevice(DeviceType type, Purpose purpose
     }
 
     return info;
+#else
+    return {};
+#endif
 }
 
 }

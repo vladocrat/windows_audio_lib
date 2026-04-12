@@ -2,7 +2,9 @@
 // lets you select one of each, then routes captured audio directly
 // to the output so you can hear yourself in real time.
 
+#ifdef _WIN32
 #include <Windows.h>
+#endif
 
 #include <iostream>
 #include <thread>
@@ -50,7 +52,9 @@ slk::DeviceDescriptor pickDevice(const std::vector<slk::DeviceDescriptor>& devic
 
 int main()
 {
+#ifdef _WIN32
     CoInitializeEx(nullptr, COINIT_MULTITHREADED);
+#endif
 
     slk::DeviceExplorer explorer;
     slk::DeviceManager manager;
@@ -119,6 +123,8 @@ int main()
     input->close();
     output->close();
 
+#ifdef _WIN32
     CoUninitialize();
+#endif
     return 0;
 }
