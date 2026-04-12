@@ -1,7 +1,9 @@
 // Capture example — records from the default microphone for 5 seconds,
 // applying an 8 kHz low-pass filter to each buffer.
 
+#ifdef _WIN32
 #include <Windows.h>
+#endif
 
 #include <iostream>
 #include <thread>
@@ -15,7 +17,9 @@
 
 int main()
 {
+#ifdef _WIN32
     CoInitializeEx(nullptr, COINIT_MULTITHREADED);
+#endif
 
     slk::DeviceManager manager;
     auto input = manager.defaultInputDevice();
@@ -55,6 +59,8 @@ int main()
 
     std::cout << "Done. Total buffers received: " << bufferCount.load() << "\n";
 
+#ifdef _WIN32
     CoUninitialize();
+#endif
     return 0;
 }

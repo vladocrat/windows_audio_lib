@@ -51,7 +51,7 @@ struct WASAPIOutputDevice::impl_t // NOLINT(cppcoreguidelines-special-member-fun
         if (deviceEvent) {
             CloseHandle(deviceEvent);
         }
-    }    
+    }
 };
 
 WASAPIOutputDevice::WASAPIOutputDevice(DeviceInfo&& info)

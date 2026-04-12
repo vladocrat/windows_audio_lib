@@ -12,7 +12,6 @@ set(PUBLIC_HEADERS
     include/slk/general.h
     include/slk/types.h
     include/slk/audiobuffer.h
-    include/slk/audiodata.h
     include/slk/audioformat.h
     include/slk/audiofile.h
     include/slk/ringbuffer.h
@@ -29,16 +28,11 @@ set(PUBLIC_HEADERS
 )
 
 set(PRIVATE_HEADERS
-    src/helpers.h
     src/deviceinfo.h
-    src/wasapidevice.h
-    src/wasapiinputdevice.h
-    src/wasapioutputdevice.h
 )
 
 set(SOURCES
     src/audiobuffer.cpp
-    src/audiodata.cpp
     src/audiofile.cpp
     src/audioformat.cpp
     src/complex.cpp
@@ -50,22 +44,45 @@ set(SOURCES
     src/noise.cpp
     src/ringbuffer.cpp
     src/types.cpp
-    src/wasapidevice.cpp
-    src/wasapiinputdevice.cpp
-    src/wasapioutputdevice.cpp
     src/window.cpp
 )
+
+set(PLATFORM_SOURCES "")
+set(PLATFORM_PRIVATE_HEADERS "")
+
+if(WIN32)
+    list(APPEND PLATFORM_SOURCES
+        src/windows/wasapidevice.cpp
+        src/windows/wasapiinputdevice.cpp
+        src/windows/wasapioutputdevice.cpp
+    )
+    list(APPEND PLATFORM_PRIVATE_HEADERS
+        src/windows/wasapidevice.h
+        src/windows/wasapiinputdevice.h
+        src/windows/wasapioutputdevice.h
+    )
+endif()
 
 add_library(sound_capture
     ${PUBLIC_HEADERS}
     ${PRIVATE_HEADERS}
+    ${PLATFORM_PRIVATE_HEADERS}
     ${SOURCES}
+    ${PLATFORM_SOURCES}
 )
 
 option(BUILD_EXAMPLES OFF)
 
 if (${BUILD_EXAMPLES})
     add_subdirectory(examples)
+endif()
+
+option(BUILD_TESTS "Build unit tests" OFF)
+
+if (BUILD_TESTS)
+    enable_testing()
+    include(cmake/GoogleTest.cmake)
+    add_subdirectory(tests)
 endif()
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include/slk)
@@ -75,6 +92,7 @@ target_include_directories(sound_capture
         ${CMAKE_CURRENT_SOURCE_DIR}/include
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/src
+        $<$<BOOL:${WIN32}>:${CMAKE_CURRENT_SOURCE_DIR}/src/windows>
 )
 
 target_link_libraries(sound_capture

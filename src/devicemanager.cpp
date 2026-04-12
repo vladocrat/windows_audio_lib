@@ -18,8 +18,11 @@
 #include <slk/deviceexplorer.h>
 
 #include "deviceinfo.h"
+
+#ifdef WIN32
 #include "wasapiinputdevice.h"
 #include "wasapioutputdevice.h"
+#endif
 
 namespace slk
 {
@@ -40,44 +43,60 @@ std::shared_ptr<InputDevice> DeviceManager::defaultInputDevice(Purpose purpose) 
 {
     auto info = impl().explorer.resolveDefaultDevice(DeviceType::Record, purpose);
 
-    if (!info.device) {
+    if (!info.isValid()) {
         return nullptr;
     }
 
+#ifdef WIN32
     return std::make_shared<WASAPIInputDevice>(std::move(info));
+#else
+    return nullptr;
+#endif
 }
 
 std::shared_ptr<OutputDevice> DeviceManager::defaultOutputDevice(Purpose purpose) const noexcept
 {
     auto info = impl().explorer.resolveDefaultDevice(DeviceType::Playback, purpose);
 
-    if (!info.device) {
+    if (!info.isValid()) {
         return nullptr;
     }
 
+#ifdef WIN32
     return std::make_shared<WASAPIOutputDevice>(std::move(info));
+#else
+    return nullptr;
+#endif
 }
 
 std::shared_ptr<InputDevice> DeviceManager::createInputDevice(const DeviceDescriptor& desc) const noexcept
 {
     auto info = impl().explorer.resolveDevice(desc);
 
-    if (!info.device) {
+    if (!info.isValid()) {
         return nullptr;
     }
 
+#ifdef WIN32
     return std::make_shared<WASAPIInputDevice>(std::move(info));
+#else
+    return nullptr;
+#endif
 }
 
 std::shared_ptr<OutputDevice> DeviceManager::createOutputDevice(const DeviceDescriptor& desc) const noexcept
 {
     auto info = impl().explorer.resolveDevice(desc);
 
-    if (!info.device) {
+    if (!info.isValid()) {
         return nullptr;
     }
 
+#ifdef WIN32
     return std::make_shared<WASAPIOutputDevice>(std::move(info));
+#else
+    return nullptr;
+#endif
 }
 
 }

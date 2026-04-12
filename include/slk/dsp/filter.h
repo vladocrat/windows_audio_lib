@@ -87,7 +87,7 @@ struct SimpleSoftLimiter
         for (auto& sample : buffer) {
             if (std::abs(sample) > threshold) {
                 const float sign = sample >= 0 ? 1.0f : -1.0f;
-                sample = static_cast<T>(sign * (threshold + std::tanh(sample - sign * threshold)));
+                sample = static_cast<T>(sign * (threshold + std::tanh(std::abs(sample) - threshold)));
             }
         }
     }
