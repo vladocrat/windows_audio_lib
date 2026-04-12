@@ -18,7 +18,7 @@
 
 #include <cstddef>
 
-namespace slk::dsp::iterals
+namespace slk::dsp::literals
 {
 
 constexpr float operator""_Hz(unsigned long long freq)
