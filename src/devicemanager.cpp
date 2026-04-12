@@ -40,7 +40,7 @@ std::shared_ptr<InputDevice> DeviceManager::defaultInputDevice(Purpose purpose) 
 {
     auto info = impl().explorer.resolveDefaultDevice(DeviceType::Record, purpose);
 
-    if (!info.device) {
+    if (!info.isValid()) {
         return nullptr;
     }
 
@@ -51,7 +51,7 @@ std::shared_ptr<OutputDevice> DeviceManager::defaultOutputDevice(Purpose purpose
 {
     auto info = impl().explorer.resolveDefaultDevice(DeviceType::Playback, purpose);
 
-    if (!info.device) {
+    if (!info.isValid()) {
         return nullptr;
     }
 
@@ -62,7 +62,7 @@ std::shared_ptr<InputDevice> DeviceManager::createInputDevice(const DeviceDescri
 {
     auto info = impl().explorer.resolveDevice(desc);
 
-    if (!info.device) {
+    if (!info.isValid()) {
         return nullptr;
     }
 
@@ -73,7 +73,7 @@ std::shared_ptr<OutputDevice> DeviceManager::createOutputDevice(const DeviceDesc
 {
     auto info = impl().explorer.resolveDevice(desc);
 
-    if (!info.device) {
+    if (!info.isValid()) {
         return nullptr;
     }
 

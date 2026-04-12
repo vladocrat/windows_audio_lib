@@ -38,6 +38,15 @@ struct DeviceInfo
     Microsoft::WRL::ComPtr<IMMDevice> device;
 #endif
 
+    [[nodiscard]] bool isValid() const noexcept
+    {
+#ifdef WIN32
+        return device != nullptr;
+#else
+        return false;
+#endif
+    }
+
     DeviceInfo() = default;
     ~DeviceInfo() = default;
     DeviceInfo(DeviceInfo&&) noexcept = default;

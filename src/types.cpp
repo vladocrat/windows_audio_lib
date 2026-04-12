@@ -16,13 +16,8 @@
 
 #include <slk/types.h>
 
-namespace slk
-{
-namespace dsp
-{
-namespace literals
+namespace slk::dsp::literals
 {
 
 }
-}
-}
+
