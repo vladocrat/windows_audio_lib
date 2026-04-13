@@ -114,27 +114,27 @@ public:
         return sizeToPeek;
     }
 
-    size_t canRead() const
+    [[nodiscard]] size_t canRead() const
     {
         const auto writeIx = _writeIx.load(std::memory_order_acquire);
         const auto readIx = _readIx.load(std::memory_order_acquire);
         return writeIx - readIx;
     }
 
-    size_t canWrite() const
+    [[nodiscard]] size_t canWrite() const
     {
         return _data.capacity() - canRead() - 1;
     }
 
 private:
-    size_t mask() const
+    [[nodiscard]] size_t mask() const
     {
         return _data.capacity() - 1;
     }
 
-    std::vector<T> _data;
-    alignas(64) std::atomic<size_t> _writeIx;
-    alignas(64) std::atomic<size_t> _readIx;
+    std::vector<T> _data {};
+    alignas(64) std::atomic<size_t> _writeIx { 0 };
+    alignas(64) std::atomic<size_t> _readIx { 0 };
 };
 
 }

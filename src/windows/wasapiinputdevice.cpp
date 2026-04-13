@@ -33,9 +33,9 @@ struct WASAPIInputDevice::impl_t // NOLINT(cppcoreguidelines-special-member-func
     std::atomic_bool shouldStop { false };
     HANDLE deviceEvent { nullptr };
 
-    WASAPIInputDevice::ProcessCallback processCallback;
+    WASAPIInputDevice::ProcessCallback processCallback {};
 
-    impl_t(DeviceInfo&& info) : device { std::move(info) }
+    impl_t(DeviceInfo&& info) : device(std::move(info))
     {
     }
 

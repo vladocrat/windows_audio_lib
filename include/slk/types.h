@@ -33,7 +33,7 @@ constexpr float operator""_Hz(long double freq)
 
 constexpr float operator""_kHz(unsigned long long freq)
 {
-    return static_cast<float>(freq * 1000.0);
+    return static_cast<float>(static_cast<double>(freq) * 1000.0);
 }
 
 constexpr float operator""_kHz(long double freq)
@@ -43,7 +43,7 @@ constexpr float operator""_kHz(long double freq)
 
 constexpr float operator""_MHz(unsigned long long freq)
 {
-    return static_cast<float>(freq * 1000000.0);
+    return static_cast<float>(static_cast<double>(freq) * 1000000.0);
 }
 
 constexpr float operator""_MHz(long double freq)
@@ -63,7 +63,7 @@ constexpr float operator""_sec(long double time)
 
 constexpr float operator""_ms(unsigned long long time)
 {
-    return static_cast<float>(time / 1000.0);
+    return static_cast<float>(static_cast<double>(time) / 1000.0);
 }
 
 constexpr float operator""_ms(long double time)

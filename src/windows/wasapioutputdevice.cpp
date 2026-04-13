@@ -34,11 +34,11 @@ struct WASAPIOutputDevice::impl_t // NOLINT(cppcoreguidelines-special-member-fun
     uint32_t bufferFrameCount { 0 };
 
     RingBuffer<float>* source { nullptr };
-    WASAPIOutputDevice::ProcessCallback processCallback;
+    WASAPIOutputDevice::ProcessCallback processCallback {};
     std::atomic_bool shouldStop { false };
     HANDLE deviceEvent { nullptr };
 
-    impl_t(DeviceInfo&& info) : device { std::move(info) }
+    impl_t(DeviceInfo&& info) : device(std::move(info))
     {
     }
 

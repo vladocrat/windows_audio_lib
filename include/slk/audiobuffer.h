@@ -236,7 +236,7 @@ private:
     template <typename U>
     friend class AudioBuffer;
 
-    std::vector<SampleType> _data;
+    std::vector<SampleType> _data {};
     uint32_t _numChannels { 0 };
     uint32_t _numSamples { 0 };
 };

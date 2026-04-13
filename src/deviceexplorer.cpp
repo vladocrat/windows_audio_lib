@@ -127,7 +127,7 @@ DeviceExplorer::~DeviceExplorer()
 #endif
 }
 
-std::vector<DeviceDescriptor> DeviceExplorer::devices(slk::DeviceType type, slk::DeviceState state) const noexcept
+std::vector<DeviceDescriptor> DeviceExplorer::devices([[maybe_unused]] slk::DeviceType type, [[maybe_unused]] slk::DeviceState state) const noexcept
 {
 #ifdef WIN32
     if (!impl().enumerator) {
@@ -175,7 +175,7 @@ std::vector<DeviceDescriptor> DeviceExplorer::devices(slk::DeviceType type, slk:
 #endif
 }
 
-DeviceInfo DeviceExplorer::resolveDevice(const DeviceDescriptor& desc) const noexcept
+DeviceInfo DeviceExplorer::resolveDevice([[maybe_unused]] const DeviceDescriptor& desc) const noexcept
 {
 #ifdef WIN32
     if (!impl().enumerator) {
@@ -195,7 +195,7 @@ DeviceInfo DeviceExplorer::resolveDevice(const DeviceDescriptor& desc) const noe
 #endif
 }
 
-DeviceInfo DeviceExplorer::resolveDefaultDevice(DeviceType type, Purpose purpose) const noexcept
+DeviceInfo DeviceExplorer::resolveDefaultDevice([[maybe_unused]] DeviceType type, [[maybe_unused]] Purpose purpose) const noexcept
 {
 #ifdef WIN32
     if (!impl().enumerator) {

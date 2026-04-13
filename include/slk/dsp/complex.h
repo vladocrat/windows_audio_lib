@@ -17,9 +17,7 @@
 
 #include <vector>
 
-namespace slk
-{
-namespace dsp
+namespace slk::dsp
 {
 
 template <class Type>
@@ -68,5 +66,4 @@ private:
 template <class Type>
 using Spectrum = std::vector<Complex<Type>>;
 
-}
 }

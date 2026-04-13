@@ -60,17 +60,17 @@ bool File::isOpen() const
 
 void File::read(char* dest, size_t size)
 {
-    _file.read(dest, size);
+    _file.read(dest, static_cast<std::streamsize>(size));
 }
 
 void File::read(std::span<char> dest, size_t size)
 {
-    _file.read(dest.data(), size);
+    _file.read(dest.data(), static_cast<std::streamsize>(size));
 }
 
 void File::skip(size_t bytes)
 {
-    _file.seekg(bytes, std::ios::cur);
+    _file.seekg(static_cast<long long>(bytes), std::ios::cur);
 }
 
 WAV::WAV(const std::string& name, const Access access) : _file(name, access)
@@ -83,10 +83,10 @@ void WAV::write(const AudioBuffer<float>& data)
 
 AudioFormat WAV::format() const
 {
-    return AudioFormat(_header.numChannels,
-                       _header.sampleRateHz,
-                       _header.bitsPerSample,
-                       _header.audioFormat == 1 ? AudioFormat::Type::PCM : AudioFormat::Type::FLOAT);
+    return { _header.numChannels,
+             _header.sampleRateHz,
+             _header.bitsPerSample,
+             _header.audioFormat == 1 ? AudioFormat::Type::PCM : AudioFormat::Type::FLOAT };
 }
 
 const WAV::Header& WAV::header() const
