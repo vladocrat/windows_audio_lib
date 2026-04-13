@@ -106,10 +106,8 @@ TEST_F(DeviceTest, CaptureBrief)
     if (!input->open())
         GTEST_SKIP() << "Failed to open input device";
 
-    std::atomic<int> bufferCount{0};
-    input->setProcessCallback([&](slk::AudioBuffer<float>&) {
-        ++bufferCount;
-    });
+    std::atomic<int> bufferCount { 0 };
+    input->setProcessCallback([&](slk::AudioBuffer<float>&) { ++bufferCount; });
 
     std::thread captureThread([&]() { input->start(); });
 

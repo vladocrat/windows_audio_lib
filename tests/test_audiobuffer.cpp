@@ -140,7 +140,7 @@ TEST(AudioBuffer, MixOperator)
         src2[i] = 0.6f;
     }
 
-    std::vector<const slk::AudioBuffer<float>*> sources = {&src1, &src2};
+    std::vector<const slk::AudioBuffer<float>*> sources = { &src1, &src2 };
     dst += sources;
 
     for (uint32_t i = 0; i < 4; ++i)

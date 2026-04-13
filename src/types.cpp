@@ -20,4 +20,3 @@ namespace slk::dsp::literals
 {
 
 }
-

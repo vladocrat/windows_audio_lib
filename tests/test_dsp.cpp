@@ -95,8 +95,8 @@ TEST(DSP, SoftLimiterNegative)
     buf | limiter;
 
     for (const auto& s : buf) {
-        EXPECT_GT(s, -2.0f);  // compressed from -2.0
-        EXPECT_LT(s, -0.9f);  // still beyond threshold (symmetric with positive)
+        EXPECT_GT(s, -2.0f); // compressed from -2.0
+        EXPECT_LT(s, -0.9f); // still beyond threshold (symmetric with positive)
     }
 }
 

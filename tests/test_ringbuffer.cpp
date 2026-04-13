@@ -26,7 +26,7 @@ TEST(RingBuffer, Peek)
 {
     slk::RingBuffer<float> ring(64);
 
-    std::vector<float> input = {1.0f, 2.0f, 3.0f};
+    std::vector<float> input = { 1.0f, 2.0f, 3.0f };
     ring.write(input);
 
     EXPECT_EQ(ring.canRead(), 3u);
@@ -84,7 +84,7 @@ TEST(RingBuffer, WrapAround)
     ring.read(drain, 5);
 
     // Now write data that wraps around
-    std::vector<float> input = {10.0f, 20.0f, 30.0f, 40.0f, 50.0f};
+    std::vector<float> input = { 10.0f, 20.0f, 30.0f, 40.0f, 50.0f };
     auto written = ring.write(input);
     EXPECT_EQ(written, 5u);
 
