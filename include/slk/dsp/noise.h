@@ -20,9 +20,7 @@
 
 #include <slk/audiobuffer.h>
 
-namespace slk
-{
-namespace dsp
+namespace slk::dsp
 {
 
 template <class SampleType>
@@ -41,5 +39,4 @@ AudioBuffer<SampleType> whiteNoise(const size_t numSamples, const SampleType amp
     return buffer;
 }
 
-}
 }

@@ -48,7 +48,7 @@ struct Hann
     }
 };
 
-template <WindowType Type, class SampleType, size_t windowSize>
+template <WindowType Type, class SampleType, size_t WindowSize>
 struct Window
 {
     constexpr Window() = default;
@@ -66,16 +66,16 @@ struct Window
     }
 
 private:
-    static std::array<SampleType, windowSize> generateCoefficients()
+    static std::array<SampleType, WindowSize> generateCoefficients()
     {
         if constexpr (Type == WindowType::Hann) {
-            return Hann::generate<SampleType, windowSize>();
+            return Hann::generate<SampleType, WindowSize>();
         } else if constexpr (Type == WindowType::FlatTop) {
             return {};
         }
     }
 
-    inline static std::array<SampleType, windowSize> coefficients = generateCoefficients();
+    inline static std::array<SampleType, WindowSize> coefficients = generateCoefficients();
 };
 
 }

@@ -86,11 +86,11 @@ struct WASAPIDevice::impl_t // NOLINT(cppcoreguidelines-special-member-functions
 {
     DeviceInfo info;
     IAudioClient* client { nullptr };
-    AudioBuffer<BYTE> data;
+    AudioBuffer<BYTE> data {};
     AudioFormat format;
     WAVEFORMATEX* rawFormat { nullptr };
 
-    impl_t(DeviceInfo&& info) : info { std::move(info) }
+    impl_t(DeviceInfo&& deviceInfo) : info(std::move(deviceInfo))
     {
     }
 

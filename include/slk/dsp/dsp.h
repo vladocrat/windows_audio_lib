@@ -22,10 +22,7 @@
 #include <slk/audiobuffer.h>
 #include <slk/dsp/complex.h>
 
-namespace slk
-{
-
-namespace dsp
+namespace slk::dsp
 {
 
 template <class Type>
@@ -41,18 +38,18 @@ T magnitude(const Complex<T>& sample)
 }
 
 template <class SampleType>
-Spectrum<SampleType> dft(const AudioBuffer<float>& buffer, const float sampleRate)
+Spectrum<SampleType> dft(const AudioBuffer<float>& buffer, [[maybe_unused]] const float sampleRate)
 {
-    const auto N = buffer.size();
+    const auto numSamples = buffer.size();
 
     Spectrum<SampleType> ret;
-    ret.reserve(N / 2 + 1);
+    ret.reserve((numSamples / 2) + 1);
 
-    for (size_t k = 0; k < N / 2; k++) {
+    for (size_t k = 0; k < numSamples / 2; k++) {
         Complex<SampleType> value(0, 0);
 
-        for (size_t n = 0; n < N; n++) {
-            const auto angle = -2.0f * std::numbers::pi * k * n / N;
+        for (size_t n = 0; n < numSamples; n++) {
+            const auto angle = -2.0f * std::numbers::pi * static_cast<double>(k * n) / static_cast<double>(numSamples);
 
             const auto real = std::cos(angle);
             const auto img = std::sin(angle);
@@ -72,7 +69,7 @@ FreqMags<Type> freqMag(const Spectrum<Type>& spectrum, const float sampleRate)
     ret.reserve(spectrum.size());
 
     for (size_t k = 0; k < spectrum.size(); k++) {
-        const auto freq = k * sampleRate / spectrum.size();
+        const auto freq = static_cast<float>(k) * sampleRate / (2.0f * spectrum.size());
         const auto mag = magnitude(spectrum[k]);
         ret.emplace_back(std::make_pair(freq, mag));
     }
@@ -80,5 +77,4 @@ FreqMags<Type> freqMag(const Spectrum<Type>& spectrum, const float sampleRate)
     return ret;
 }
 
-}
 }

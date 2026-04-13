@@ -16,11 +16,6 @@
 
 #include <slk/dsp/complex.h>
 
-namespace slk
+namespace slk::dsp
 {
-
-namespace dsp
-{
-
-}
 }

@@ -1,7 +1,9 @@
 // Playback example — generates white noise, fills a ring buffer,
 // and plays it through the default output device for 3 seconds.
 
+#ifdef _WIN32
 #include <Windows.h>
+#endif
 
 #include <iostream>
 #include <thread>
@@ -15,7 +17,9 @@
 
 int main()
 {
+#ifdef _WIN32
     CoInitializeEx(nullptr, COINIT_MULTITHREADED);
+#endif
 
     slk::DeviceManager manager;
     auto output = manager.defaultOutputDevice(slk::Purpose::Multimedia);
@@ -53,6 +57,8 @@ int main()
     playbackThread.join();
     output->close();
 
+#ifdef _WIN32
     CoUninitialize();
+#endif
     return 0;
 }

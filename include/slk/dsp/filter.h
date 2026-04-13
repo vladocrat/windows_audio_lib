@@ -45,7 +45,7 @@ struct LowPassFilter
         T previous { 0 };
 
         for (auto& sample : buffer) {
-            previous = alpha * sample + (1.0f - alpha) * previous;
+            previous = (alpha * sample) + ((1.0f - alpha) * previous);
             sample = previous;
         }
     }
@@ -67,7 +67,7 @@ struct SimpleGainFilter
 
         for (uint32_t i = 0; i < numSamples; ++i) {
             for (uint32_t ch = 0; ch < numChannels; ++ch) {
-                buffer[i * numChannels + ch] = static_cast<T>(buffer[i * numChannels + ch] * gain);
+                buffer[(i * numChannels) + ch] = static_cast<T>(buffer[(i * numChannels) + ch] * gain);
             }
         }
     }
@@ -87,7 +87,7 @@ struct SimpleSoftLimiter
         for (auto& sample : buffer) {
             if (std::abs(sample) > threshold) {
                 const float sign = sample >= 0 ? 1.0f : -1.0f;
-                sample = static_cast<T>(sign * (threshold + std::tanh(sample - sign * threshold)));
+                sample = static_cast<T>(sign * (threshold + std::tanh(std::abs(sample) - threshold)));
             }
         }
     }

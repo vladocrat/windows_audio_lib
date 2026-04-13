@@ -22,7 +22,6 @@
 
 // Audio data structures
 #include <slk/audiobuffer.h>
-#include <slk/audiodata.h>
 #include <slk/audioformat.h>
 #include <slk/audiofile.h>
 #include <slk/ringbuffer.h>

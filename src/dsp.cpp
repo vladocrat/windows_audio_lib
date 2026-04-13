@@ -16,12 +16,7 @@
 
 #include <slk/dsp/dsp.h>
 
-namespace slk
+namespace slk::dsp
 {
-
-namespace dsp
-{
-
-}
 
 }

@@ -34,8 +34,10 @@ public:
     DeviceManager();
     ~DeviceManager();
 
-    [[nodiscard]] std::shared_ptr<InputDevice> defaultInputDevice(slk::Purpose purpose = slk::Purpose::Multimedia) const noexcept;
-    [[nodiscard]] std::shared_ptr<OutputDevice> defaultOutputDevice(slk::Purpose purpose = slk::Purpose::Multimedia) const noexcept;
+    [[nodiscard]] std::shared_ptr<InputDevice>
+    defaultInputDevice(slk::Purpose purpose = slk::Purpose::Multimedia) const noexcept;
+    [[nodiscard]] std::shared_ptr<OutputDevice>
+    defaultOutputDevice(slk::Purpose purpose = slk::Purpose::Multimedia) const noexcept;
 
     [[nodiscard]] std::shared_ptr<InputDevice> createInputDevice(const DeviceDescriptor& desc) const noexcept;
     [[nodiscard]] std::shared_ptr<OutputDevice> createOutputDevice(const DeviceDescriptor& desc) const noexcept;

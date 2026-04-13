@@ -14,9 +14,10 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-#include "wasapiinputdevice.h"
+#include "wasapioutputdevice.h"
 
 #include <Windows.h>
+
 #include <cstring>
 
 #include "wasapidevice.h"
@@ -26,16 +27,18 @@
 namespace slk
 {
 
-struct WASAPIInputDevice::impl_t // NOLINT(cppcoreguidelines-special-member-functions)
+struct WASAPIOutputDevice::impl_t // NOLINT(cppcoreguidelines-special-member-functions)
 {
     WASAPIDevice device;
-    IAudioCaptureClient* client { nullptr };
+    IAudioRenderClient* client { nullptr };
+    uint32_t bufferFrameCount { 0 };
+
+    RingBuffer<float>* source { nullptr };
+    WASAPIOutputDevice::ProcessCallback processCallback {};
     std::atomic_bool shouldStop { false };
     HANDLE deviceEvent { nullptr };
 
-    WASAPIInputDevice::ProcessCallback processCallback;
-
-    impl_t(DeviceInfo&& info) : device { std::move(info) }
+    impl_t(DeviceInfo&& info) : device(std::move(info))
     {
     }
 
@@ -51,28 +54,33 @@ struct WASAPIInputDevice::impl_t // NOLINT(cppcoreguidelines-special-member-func
     }
 };
 
-WASAPIInputDevice::WASAPIInputDevice(DeviceInfo&& info)
+WASAPIOutputDevice::WASAPIOutputDevice(DeviceInfo&& info)
 {
     createImpl(std::move(info));
 }
 
-WASAPIInputDevice::~WASAPIInputDevice() = default;
+WASAPIOutputDevice::~WASAPIOutputDevice() = default;
 
-bool WASAPIInputDevice::open()
+bool WASAPIOutputDevice::open()
 {
     const auto res = impl().device.open(AUDCLNT_STREAMFLAGS_EVENTCALLBACK);
-
     if (!res) {
         return false;
     }
 
-    const auto hr = impl().device.audioClient()->GetService(__uuidof(IAudioCaptureClient),
-                                                            reinterpret_cast<void**>(&impl().client));
+    auto hr =
+        impl().device.audioClient()->GetService(__uuidof(IAudioRenderClient), reinterpret_cast<void**>(&impl().client));
+
+    if (hr != S_OK) {
+        return false;
+    }
+
+    hr = impl().device.audioClient()->GetBufferSize(&impl().bufferFrameCount);
 
     return hr == S_OK;
 }
 
-bool WASAPIInputDevice::close()
+bool WASAPIOutputDevice::close()
 {
     if (!impl().client) {
         return true;
@@ -84,7 +92,7 @@ bool WASAPIInputDevice::close()
     return true;
 }
 
-bool WASAPIInputDevice::start()
+bool WASAPIOutputDevice::start()
 {
     impl().shouldStop = false;
     impl().deviceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
@@ -93,9 +101,9 @@ bool WASAPIInputDevice::start()
         return false;
     }
 
-    const auto res = impl().device.audioClient()->SetEventHandle(impl().deviceEvent);
+    auto hr = impl().device.audioClient()->SetEventHandle(impl().deviceEvent);
 
-    if (res != S_OK) {
+    if (hr != S_OK) {
         return false;
     }
 
@@ -116,41 +124,45 @@ bool WASAPIInputDevice::start()
             break;
         }
 
-        UINT32 packetLength = 0;
-        auto hr = impl().client->GetNextPacketSize(&packetLength);
-
-        while (SUCCEEDED(hr) && packetLength > 0 && !impl().shouldStop) {
-            BYTE* data { nullptr };
-            UINT32 numFrames { 0 };
-            DWORD flags { 0 };
-
-            hr = impl().client->GetBuffer(&data, &numFrames, &flags, nullptr, nullptr);
-
-            if (FAILED(hr)) {
-                continue;
-            }
-
-            if (numFrames > 0 && !(flags & AUDCLNT_BUFFERFLAGS_SILENT)) {
-                AudioBuffer<float> captureBuffer(channels, numFrames);
-
-                const size_t samplesToCopy = static_cast<size_t>(numFrames) * channels;
-                std::memcpy(captureBuffer.data().data(), data, samplesToCopy * sizeof(float));
-
-                if (impl().processCallback) {
-                    impl().processCallback(captureBuffer);
-                }
-            }
-
-            impl().client->ReleaseBuffer(numFrames);
-
-            hr = impl().client->GetNextPacketSize(&packetLength);
+        UINT32 numFramesPadding { 0 };
+        hr = impl().device.audioClient()->GetCurrentPadding(&numFramesPadding);
+        if (FAILED(hr)) {
+            continue;
         }
+
+        const auto numFramesAvailable = impl().bufferFrameCount - numFramesPadding;
+        if (numFramesAvailable == 0) {
+            continue;
+        }
+
+        BYTE* data { nullptr };
+        hr = impl().client->GetBuffer(numFramesAvailable, &data);
+
+        if (FAILED(hr) || !data) {
+            continue;
+        }
+
+        AudioBuffer<float> tempBuffer(channels, numFramesAvailable);
+
+        if (impl().source) {
+            const size_t maxSamples = static_cast<size_t>(numFramesAvailable) * channels;
+            impl().source->read(std::span<float>(tempBuffer.data().data(), maxSamples), maxSamples);
+        }
+
+        if (impl().processCallback) {
+            impl().processCallback(tempBuffer);
+        }
+
+        const size_t bytesToWrite = static_cast<size_t>(numFramesAvailable) * channels * sizeof(float);
+        std::memcpy(data, tempBuffer.data().data(), bytesToWrite);
+
+        impl().client->ReleaseBuffer(numFramesAvailable, 0);
     }
 
     return true;
 }
 
-bool WASAPIInputDevice::stop()
+bool WASAPIOutputDevice::stop()
 {
     impl().shouldStop = true;
 
@@ -167,17 +179,22 @@ bool WASAPIInputDevice::stop()
     return true;
 }
 
-void WASAPIInputDevice::setProcessCallback(ProcessCallback callback)
+void WASAPIOutputDevice::setSource(RingBuffer<float>& source)
+{
+    impl().source = &source;
+}
+
+void WASAPIOutputDevice::setProcessCallback(ProcessCallback callback)
 {
     impl().processCallback = std::move(callback);
 }
 
-const AudioFormat& WASAPIInputDevice::format() const
+const AudioFormat& WASAPIOutputDevice::format() const
 {
     return impl().device.format();
 }
 
-DeviceDescriptor WASAPIInputDevice::descriptor() const
+DeviceDescriptor WASAPIOutputDevice::descriptor() const
 {
     return impl().device.descriptor();
 }

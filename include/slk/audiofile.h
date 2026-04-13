@@ -23,7 +23,7 @@
 namespace slk
 {
 
-enum class Access
+enum class Access : uint8_t
 {
     Read,
     Write,
@@ -33,12 +33,17 @@ enum class Access
 class File
 {
 public:
-    File(const std::string& name, const Access access);
+    File(const std::string& name, Access access);
     ~File();
 
-    bool open(const std::string& name, const Access access);
+    File(const File&) = delete;
+    File& operator=(const File&) = delete;
+    File(File&&) noexcept = default;
+    File& operator=(File&&) noexcept = default;
+
+    bool open(const std::string& name, Access access);
     bool close();
-    bool isOpen() const;
+    [[nodiscard]] bool isOpen() const;
     void read(char* dest, size_t size);
     void read(std::span<char> dest, size_t size);
     void skip(size_t bytes);
@@ -52,24 +57,24 @@ class WAV
 public:
     struct Header
     {
-        uint32_t fileTypeBlocID;
-        uint32_t fileSize;
-        uint32_t fileFormatID;
+        uint32_t fileTypeBlocID {};
+        uint32_t fileSize {};
+        uint32_t fileFormatID {};
 
-        uint32_t formatBlocID;
-        uint32_t blocSize;
-        uint16_t audioFormat;
-        uint16_t numChannels;
-        uint32_t sampleRateHz;
-        uint32_t bytesPerSec;   //! sampleRate * bytesPerBlock
-        uint16_t bytesPerBlock; //! numChannels * bitsPerSample / 8
-        uint16_t bitsPerSample;
+        uint32_t formatBlocID {};
+        uint32_t blocSize {};
+        uint16_t audioFormat {};
+        uint16_t numChannels {};
+        uint32_t sampleRateHz {};
+        uint32_t bytesPerSec {};   //! sampleRate * bytesPerBlock
+        uint16_t bytesPerBlock {}; //! numChannels * bitsPerSample / 8
+        uint16_t bitsPerSample {};
 
-        uint32_t dataBlocID;
-        uint32_t dataSize;
+        uint32_t dataBlocID {};
+        uint32_t dataSize {};
     };
 
-    WAV(const std::string& name, const Access access);
+    WAV(const std::string& name, Access access);
 
     void write(const AudioBuffer<float>& data);
 
@@ -84,7 +89,8 @@ public:
         bool foundData = false;
 
         while (!foundFmt || !foundData) {
-            uint32_t chunkID {}, chunkSize {};
+            uint32_t chunkID {};
+            uint32_t chunkSize {};
             readVal(&chunkID);
             readVal(&chunkSize);
 
@@ -118,10 +124,10 @@ public:
         return true;
     }
 
-    AudioFormat format() const;
-    const Header& header() const;
-    const AudioBuffer<char>& payload() const;
-    bool isOpen() const;
+    [[nodiscard]] AudioFormat format() const;
+    [[nodiscard]] const Header& header() const;
+    [[nodiscard]] const AudioBuffer<char>& payload() const;
+    [[nodiscard]] bool isOpen() const;
 
 private:
     template <class T>
@@ -131,7 +137,7 @@ private:
     }
 
     File _file;
-    Header _header;
+    Header _header {};
     AudioBuffer<char> _data;
 };
 

@@ -1,7 +1,9 @@
 // DSP spectrum example — captures from the default microphone and prints
 // the top 5 frequency peaks every 1024 samples using a Hann-windowed DFT.
 
+#ifdef _WIN32
 #include <Windows.h>
+#endif
 
 #include <iostream>
 #include <thread>
@@ -19,7 +21,9 @@ static constexpr size_t kWindowSize = 1024;
 
 int main()
 {
+#ifdef _WIN32
     CoInitializeEx(nullptr, COINIT_MULTITHREADED);
+#endif
 
     slk::DeviceManager manager;
     auto input = manager.defaultInputDevice(slk::Purpose::Multimedia);
@@ -76,6 +80,8 @@ int main()
     captureThread.join();
     input->close();
 
+#ifdef _WIN32
     CoUninitialize();
+#endif
     return 0;
 }
