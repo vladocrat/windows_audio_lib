@@ -16,6 +16,7 @@
 #include <slk/outputdevice.h>
 #include <slk/ringbuffer.h>
 #include <slk/dsp/filter.h>
+#include <slk/types.h>
 
 namespace
 {
@@ -99,8 +100,8 @@ int main()
 
     output->setSource(ring);
 
-    slk::filter::SimpleGainFilter<float> gain(5.f);
-    slk::filter::SimpleSoftLimiter<float> limiter(0.9f);
+    slk::filter::SimpleGainFilter<float> gain(slk::dsp::Db::fromLinear(5.f));
+    slk::filter::SimpleSoftLimiter<float> limiter(slk::dsp::Db::fromLinear(0.9f));
 
     input->setProcessCallback([&](slk::AudioBuffer<float>& buf) {
         buf | gain | limiter;

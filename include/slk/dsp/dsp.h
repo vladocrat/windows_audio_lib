@@ -21,6 +21,7 @@
 
 #include <slk/audiobuffer.h>
 #include <slk/dsp/complex.h>
+#include <slk/types.h>
 
 namespace slk::dsp
 {
@@ -38,7 +39,7 @@ T magnitude(const Complex<T>& sample)
 }
 
 template <class SampleType>
-Spectrum<SampleType> dft(const AudioBuffer<float>& buffer, [[maybe_unused]] const float sampleRate)
+Spectrum<SampleType> dft(const AudioBuffer<float>& buffer, [[maybe_unused]] const Hertz sampleRate)
 {
     const auto numSamples = buffer.size();
 
@@ -63,13 +64,13 @@ Spectrum<SampleType> dft(const AudioBuffer<float>& buffer, [[maybe_unused]] cons
 }
 
 template <class Type>
-FreqMags<Type> freqMag(const Spectrum<Type>& spectrum, const float sampleRate)
+FreqMags<Type> freqMag(const Spectrum<Type>& spectrum, const Hertz sampleRate)
 {
     FreqMags<Type> ret;
     ret.reserve(spectrum.size());
 
     for (size_t k = 0; k < spectrum.size(); k++) {
-        const auto freq = static_cast<float>(k) * sampleRate / (2.0f * spectrum.size());
+        const auto freq = static_cast<float>(k) * sampleRate.count() / (2.0f * spectrum.size());
         const auto mag = magnitude(spectrum[k]);
         ret.emplace_back(std::make_pair(freq, mag));
     }

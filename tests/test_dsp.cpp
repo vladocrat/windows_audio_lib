@@ -9,21 +9,25 @@
 #include <slk/dsp/processor.h>
 #include <slk/dsp/chain.h>
 #include <slk/dsp/graph.h>
+#include <slk/types.h>
 
 #include <cmath>
 #include <numbers>
 #include <algorithm>
 
+using slk::dsp::Hertz;
+using slk::dsp::Db;
+
 TEST(DSP, WhiteNoiseSize)
 {
-    auto buf = slk::dsp::whiteNoise<float>(1024, 0.5f);
+    auto buf = slk::dsp::whiteNoise<float>(1024, Db::fromLinear(0.5f));
     EXPECT_EQ(buf.channels(), 1u);
     EXPECT_EQ(buf.numSamples(), 1024u);
 }
 
 TEST(DSP, WhiteNoiseAmplitude)
 {
-    auto buf = slk::dsp::whiteNoise<float>(4096, 0.5f);
+    auto buf = slk::dsp::whiteNoise<float>(4096, Db::fromLinear(0.5f));
 
     for (size_t i = 0; i < buf.size(); ++i) {
         EXPECT_GE(buf[i], -0.5f);
@@ -37,7 +41,7 @@ TEST(DSP, GainFilter)
     for (auto& s : buf)
         s = 0.5f;
 
-    slk::filter::SimpleGainFilter<float> gain(2.0f);
+    slk::filter::SimpleGainFilter<float> gain(Db::fromLinear(2.0f));
     buf | gain;
 
     for (const auto& s : buf)
@@ -50,7 +54,7 @@ TEST(DSP, GainFilterMultichannel)
     for (auto& s : buf)
         s = 0.25f;
 
-    slk::filter::SimpleGainFilter<float> gain(4.0f);
+    slk::filter::SimpleGainFilter<float> gain(Db::fromLinear(4.0f));
     buf | gain;
 
     for (const auto& s : buf)
@@ -63,7 +67,7 @@ TEST(DSP, LowPassFilter)
     for (uint32_t i = 0; i < 64; ++i)
         buf[i] = (i % 2 == 0) ? 1.0f : -1.0f;
 
-    slk::filter::LowPassFilter<float> lpf(1000.0f, 48000.0f);
+    slk::filter::LowPassFilter<float> lpf(Hertz(1000.0f), Hertz(48000.0f));
     buf | lpf;
 
     float maxAbs = 0.0f;
@@ -79,7 +83,7 @@ TEST(DSP, SoftLimiter)
     for (auto& s : buf)
         s = 2.0f;
 
-    slk::filter::SimpleSoftLimiter<float> limiter(0.9f);
+    slk::filter::SimpleSoftLimiter<float> limiter(Db::fromLinear(0.9f));
     buf | limiter;
 
     for (const auto& s : buf) {
@@ -94,7 +98,7 @@ TEST(DSP, SoftLimiterNegative)
     for (auto& s : buf)
         s = -2.0f;
 
-    slk::filter::SimpleSoftLimiter<float> limiter(0.9f);
+    slk::filter::SimpleSoftLimiter<float> limiter(Db::fromLinear(0.9f));
     buf | limiter;
 
     for (const auto& s : buf) {
@@ -109,7 +113,7 @@ TEST(DSP, SoftLimiterBelowThreshold)
     for (auto& s : buf)
         s = 0.5f;
 
-    slk::filter::SimpleSoftLimiter<float> limiter(0.9f);
+    slk::filter::SimpleSoftLimiter<float> limiter(Db::fromLinear(0.9f));
     buf | limiter;
 
     for (const auto& s : buf)
@@ -122,8 +126,8 @@ TEST(DSP, FilterChain)
     for (auto& s : buf)
         s = 0.3f;
 
-    slk::filter::SimpleGainFilter<float> gain(3.0f);
-    slk::filter::SimpleSoftLimiter<float> limiter(0.8f);
+    slk::filter::SimpleGainFilter<float> gain(Db::fromLinear(3.0f));
+    slk::filter::SimpleSoftLimiter<float> limiter(Db::fromLinear(0.8f));
 
     buf | gain | limiter;
 
@@ -179,13 +183,13 @@ TEST(DSP, DFTPeakBin)
     // DFT angle = -2*pi*k*n/N, so bin k corresponds to freq = k * sampleRate / N.
     // N=64 samples, sampleRate=6400 Hz, bin k=5 -> freq = 5 * 6400 / 64 = 500 Hz
     constexpr size_t N = 64;
-    constexpr float sampleRate = 6400.0f;
+    const Hertz sampleRate(6400.0f);
     constexpr size_t targetBin = 5;
 
     slk::AudioBuffer<float> buf(1, N);
     for (size_t i = 0; i < N; ++i) {
-        float freq = static_cast<float>(targetBin) * sampleRate / static_cast<float>(N);
-        buf[i] = std::sin(2.0f * std::numbers::pi_v<float> * freq * static_cast<float>(i) / sampleRate);
+        float freq = static_cast<float>(targetBin) * sampleRate.count() / static_cast<float>(N);
+        buf[i] = std::sin(2.0f * std::numbers::pi_v<float> * freq * static_cast<float>(i) / sampleRate.count());
     }
 
     auto spectrum = slk::dsp::dft<float>(buf, sampleRate);
@@ -208,11 +212,11 @@ TEST(DSP, DFTPeakBin)
 TEST(DSP, FreqMag)
 {
     constexpr size_t N = 64;
-    constexpr float sampleRate = 6400.0f;
+    const Hertz sampleRate(6400.0f);
 
     slk::AudioBuffer<float> buf(1, N);
     for (size_t i = 0; i < N; ++i)
-        buf[i] = std::sin(2.0f * std::numbers::pi_v<float> * 1000.0f * static_cast<float>(i) / sampleRate);
+        buf[i] = std::sin(2.0f * std::numbers::pi_v<float> * 1000.0f * static_cast<float>(i) / sampleRate.count());
 
     auto spectrum = slk::dsp::dft<float>(buf, sampleRate);
     auto freqMags = slk::dsp::freqMag<float>(spectrum, sampleRate);
@@ -222,7 +226,7 @@ TEST(DSP, FreqMag)
     // Verify frequency values: bin k should map to k * sampleRate / N
     // where N = 2 * spectrum.size()
     for (size_t k = 0; k < freqMags.size(); ++k) {
-        float expectedFreq = static_cast<float>(k) * sampleRate / (2.0f * static_cast<float>(spectrum.size()));
+        float expectedFreq = static_cast<float>(k) * sampleRate.count() / (2.0f * static_cast<float>(spectrum.size()));
         EXPECT_NEAR(freqMags[k].first, expectedFreq, 1e-2f);
     }
 }
@@ -236,8 +240,8 @@ TEST(FilterChain, AppliesFiltersInOrder)
     for (auto& s : buf)
         s = 0.1f;
 
-    slk::filter::SimpleGainFilter<float> gain(10.0f);
-    slk::filter::SimpleSoftLimiter<float> limiter(0.9f);
+    slk::filter::SimpleGainFilter<float> gain(Db::fromLinear(10.0f));
+    slk::filter::SimpleSoftLimiter<float> limiter(Db::fromLinear(0.9f));
     auto chain = slk::dsp::makeChain<float>(gain, limiter);
     chain(buf);
 
@@ -254,7 +258,7 @@ TEST(FilterChain, SatisfiesPipeOperator)
     for (auto& s : buf)
         s = 0.5f;
 
-    slk::filter::SimpleGainFilter<float> gain(2.0f);
+    slk::filter::SimpleGainFilter<float> gain(Db::fromLinear(2.0f));
     auto chain = slk::dsp::makeChain<float>(gain);
 
     buf | chain;
@@ -270,8 +274,8 @@ TEST(FilterChain, MultipleFilters)
     for (auto& s : buf)
         s = 0.5f;
 
-    slk::filter::SimpleGainFilter<float> gain1(2.0f);
-    slk::filter::SimpleGainFilter<float> gain2(2.0f);
+    slk::filter::SimpleGainFilter<float> gain1(Db::fromLinear(2.0f));
+    slk::filter::SimpleGainFilter<float> gain2(Db::fromLinear(2.0f));
     auto chain = slk::dsp::makeChain<float>(gain1, gain2);
     chain(buf);
 
@@ -283,7 +287,7 @@ TEST(FilterChain, MultipleFilters)
 
 TEST(AudioGraph, LinearChain)
 {
-    slk::filter::SimpleGainFilter<float> gain(2.0f);
+    slk::filter::SimpleGainFilter<float> gain(Db::fromLinear(2.0f));
 
     slk::dsp::AudioGraph<float> graph;
     auto h = graph.addNode(gain);
@@ -303,7 +307,7 @@ TEST(AudioGraph, LinearChain)
 
 TEST(AudioGraph, SourceSeesOriginalBuffer)
 {
-    slk::filter::SimpleGainFilter<float> gain(2.0f);
+    slk::filter::SimpleGainFilter<float> gain(Db::fromLinear(2.0f));
 
     slk::dsp::AudioGraph<float> graph;
     auto h = graph.addNode(gain);
@@ -326,8 +330,8 @@ TEST(AudioGraph, FanOutPreservesIndependentPaths)
     // Source fans out to gain1 and gain2.
     // Only the gain2 branch leads to the output.
     // gain1 must not corrupt gain2's buffer.
-    slk::filter::SimpleGainFilter<float> gain1(2.0f);
-    slk::filter::SimpleGainFilter<float> gain2(0.5f);
+    slk::filter::SimpleGainFilter<float> gain1(Db::fromLinear(2.0f));
+    slk::filter::SimpleGainFilter<float> gain2(Db::fromLinear(0.5f));
 
     slk::dsp::AudioGraph<float> graphA;
     auto hG1a = graphA.addNode(gain1);
@@ -367,9 +371,9 @@ TEST(AudioGraph, FanOutPreservesIndependentPaths)
 
 TEST(AudioGraph, ImplicitMixSumsTwoPaths)
 {
-    slk::filter::SimpleGainFilter<float> gain1(0.3f);
-    slk::filter::SimpleGainFilter<float> gain2(0.3f);
-    slk::filter::SimpleGainFilter<float> output(1.0f);
+    slk::filter::SimpleGainFilter<float> gain1(Db::fromLinear(0.3f));
+    slk::filter::SimpleGainFilter<float> gain2(Db::fromLinear(0.3f));
+    slk::filter::SimpleGainFilter<float> output(Db::fromLinear(1.0f));
 
     slk::dsp::AudioGraph<float> graph;
     auto hG1 = graph.addNode(gain1);
@@ -395,7 +399,7 @@ TEST(AudioGraph, ImplicitMixSumsTwoPaths)
 
 TEST(AudioGraph, AsCallback)
 {
-    slk::filter::SimpleGainFilter<float> gain(3.0f);
+    slk::filter::SimpleGainFilter<float> gain(Db::fromLinear(3.0f));
 
     slk::dsp::AudioGraph<float> graph;
     auto h = graph.addNode(gain);

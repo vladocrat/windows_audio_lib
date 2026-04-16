@@ -28,6 +28,8 @@ set(PUBLIC_HEADERS
     include/slk/dsp/processor.h
     include/slk/dsp/chain.h
     include/slk/dsp/graph.h
+    include/slk/dsp/hertz.h
+    include/slk/dsp/db.h
     include/slk/dsp/kahn.h
 )
 
@@ -40,6 +42,7 @@ set(SOURCES
     src/audiofile.cpp
     src/audioformat.cpp
     src/complex.cpp
+    src/db.cpp
     src/device.cpp
     src/deviceexplorer.cpp
     src/devicemanager.cpp

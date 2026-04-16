@@ -14,6 +14,7 @@
 #include <slk/inputdevice.h>
 #include <slk/dsp/filter.h>
 #include <slk/audioformat.h>
+#include <slk/types.h>
 
 int main()
 {
@@ -34,11 +35,11 @@ int main()
         return 1;
     }
 
-    const float sampleRate = static_cast<float>(input->format().sampleRate());
+    const slk::dsp::Hertz sampleRate(static_cast<float>(input->format().sampleRate()));
     const uint32_t channels = input->format().channels();
-    std::cout << "Sample rate: " << sampleRate << "  Channels: " << channels << "\n";
+    std::cout << "Sample rate: " << sampleRate.count() << "  Channels: " << channels << "\n";
 
-    slk::filter::LowPassFilter<float> lpf(8000.0f, sampleRate);
+    slk::filter::LowPassFilter<float> lpf(slk::dsp::Hertz(8000.0f), sampleRate);
     std::atomic<int> bufferCount { 0 };
 
     input->setProcessCallback([&](slk::AudioBuffer<float>& buf) {

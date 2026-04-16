@@ -14,4 +14,39 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-#include <slk/types.h>
+#pragma once
+
+#include <compare>
+
+namespace slk::dsp
+{
+
+struct Db
+{
+    float value; // stores LINEAR gain
+
+    explicit Db(float dB) noexcept;
+
+    [[nodiscard]] float count() const noexcept;
+
+    auto operator<=>(const Db&) const = default;
+
+    Db operator*(Db rhs) const noexcept;
+    Db operator*(float s) const noexcept;
+    Db operator/(float s) const noexcept;
+
+    friend Db operator*(float s, Db d) noexcept;
+
+    static Db fromLinear(float linear) noexcept;
+};
+
+} // namespace slk::dsp
+
+namespace slk::dsp::literals
+{
+
+Db operator""_dB(unsigned long long dB);
+
+Db operator""_dB(long double dB);
+
+} // namespace slk::dsp::literals

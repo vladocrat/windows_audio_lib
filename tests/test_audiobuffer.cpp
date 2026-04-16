@@ -121,7 +121,7 @@ TEST(AudioBuffer, PipeOperator)
     for (auto& s : buf)
         s = 0.5f;
 
-    slk::filter::SimpleGainFilter<float> gain(1.0f);
+    slk::filter::SimpleGainFilter<float> gain(slk::dsp::Db::fromLinear(1.0f));
     buf | gain;
 
     for (const auto& s : buf)

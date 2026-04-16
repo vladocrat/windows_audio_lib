@@ -34,6 +34,7 @@
 #include <slk/dsp/filter.h>
 #include <slk/dsp/graph.h>
 #include <slk/dsp/noise.h>
+#include <slk/types.h>
 
 // ── Application-side graph descriptor (not part of the library) ──────────────
 //
@@ -80,13 +81,15 @@ slk::dsp::AudioGraph<float> buildGraph(const AppGraphDesc& desc, uint32_t channe
 
         switch (nd.type) {
         case AppNodeType::LowPass:
-            h = graph.addNode(slk::filter::LowPassFilter<float> { nd.params.at("cutoff"), nd.params.at("sampleRate") });
+            h = graph.addNode(slk::filter::LowPassFilter<float> {
+                slk::dsp::Hertz(nd.params.at("cutoff")), slk::dsp::Hertz(nd.params.at("sampleRate")) });
             break;
         case AppNodeType::Gain:
-            h = graph.addNode(slk::filter::SimpleGainFilter<float> { nd.params.at("gain") });
+            h = graph.addNode(slk::filter::SimpleGainFilter<float> { slk::dsp::Db::fromLinear(nd.params.at("gain")) });
             break;
         case AppNodeType::SoftLimiter:
-            h = graph.addNode(slk::filter::SimpleSoftLimiter<float> { nd.params.at("threshold") });
+            h = graph.addNode(
+                slk::filter::SimpleSoftLimiter<float> { slk::dsp::Db::fromLinear(nd.params.at("threshold")) });
             break;
         }
 
@@ -110,11 +113,11 @@ int main()
     // ── FilterChain ──────────────────────────────────────────────────────────
     std::cout << "--- FilterChain ---\n";
 
-    auto noiseBuf = slk::dsp::whiteNoise<float>(512, 0.8f);
+    auto noiseBuf = slk::dsp::whiteNoise<float>(512, slk::dsp::Db::fromLinear(0.8f));
 
-    slk::filter::LowPassFilter<float>     lpf(1000.0f, 48000.0f);
-    slk::filter::SimpleGainFilter<float>  gain(1.5f);
-    slk::filter::SimpleSoftLimiter<float> limiter(0.9f);
+    slk::filter::LowPassFilter<float>     lpf(slk::dsp::Hertz(1000.0f), slk::dsp::Hertz(48000.0f));
+    slk::filter::SimpleGainFilter<float>  gain(slk::dsp::Db::fromLinear(1.5f));
+    slk::filter::SimpleSoftLimiter<float> limiter(slk::dsp::Db::fromLinear(0.9f));
 
     auto chain = slk::dsp::makeChain<float>(lpf, gain, limiter);
     chain(noiseBuf);
@@ -132,9 +135,9 @@ int main()
     // Graph topology:
     //   [input] ──► [gain x2.0] ──► [lpf 500Hz] ──► [limiter 0.9] ──► output
 
-    slk::filter::SimpleGainFilter<float>  gainHigh(2.0f);
-    slk::filter::LowPassFilter<float>     lpfLow(500.0f, 48000.0f);
-    slk::filter::SimpleSoftLimiter<float> graphLimiter(0.9f);
+    slk::filter::SimpleGainFilter<float>  gainHigh(slk::dsp::Db::fromLinear(2.0f));
+    slk::filter::LowPassFilter<float>     lpfLow(slk::dsp::Hertz(500.0f), slk::dsp::Hertz(48000.0f));
+    slk::filter::SimpleSoftLimiter<float> graphLimiter(slk::dsp::Db::fromLinear(0.9f));
 
     slk::dsp::AudioGraph<float> graph;
 

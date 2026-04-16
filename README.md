@@ -22,6 +22,7 @@ A C++20 Windows audio library built on WASAPI. It provides device enumeration, l
 - **Audio playback** — `OutputDevice` fed from a lock-free `RingBuffer<float>`
 - **WAV file I/O** — read/write WAV files with automatic format handling
 - **DSP** — DFT, low-pass filter, window functions (Hann, FlatTop), white noise generator
+- **Type-safe units** — `Hertz` and `Db` strong types prevent mixing frequency and gain values at compile time
 - **Filter chain** — compose multiple filters into a single callable via `makeChain<T>()`
 - **Audio graph** — `AudioGraph<T>` for arbitrary DAG topologies with automatic buffer management and implicit mixing
 - **Audio buffers** — multi-channel `AudioBuffer<T>`, lock-free `RingBuffer<T>`, functional filter piping (`buffer | filter`)
@@ -106,7 +107,8 @@ DeviceManager manager;
 auto input = manager.defaultInputDevice(Purpose::Multimedia);
 
 // Optional: process each buffer in-place
-filter::LowPassFilter<float> lpf(5000.0f, input->format().sampleRate());
+dsp::Hertz sampleRate(static_cast<float>(input->format().sampleRate()));
+filter::LowPassFilter<float> lpf(dsp::Hertz(5000.0f), sampleRate);
 input->setProcessCallback([&](AudioBuffer<float>& buf) {
     buf | lpf;
 });
@@ -182,9 +184,9 @@ input->start();
 
 using namespace slk;
 
-filter::SimpleGainFilter<float>  gain(1.5f);
-filter::LowPassFilter<float>     lpf(1000.0f, 48000.0f);
-filter::SimpleSoftLimiter<float> limiter(0.9f);
+filter::SimpleGainFilter<float>  gain(dsp::Db::fromLinear(1.5f));
+filter::LowPassFilter<float>     lpf(dsp::Hertz(1000.0f), dsp::Hertz(48000.0f));
+filter::SimpleSoftLimiter<float> limiter(dsp::Db::fromLinear(0.9f));
 
 auto chain = dsp::makeChain<float>(gain, lpf, limiter);
 
@@ -201,9 +203,9 @@ chain(buf);           // applies gain → lpf → limiter in order
 
 using namespace slk;
 
-filter::SimpleGainFilter<float>  gainL(0.8f);
-filter::SimpleGainFilter<float>  gainR(0.6f);
-filter::SimpleSoftLimiter<float> limiter(0.9f);
+filter::SimpleGainFilter<float>  gainL(dsp::Db::fromLinear(0.8f));
+filter::SimpleGainFilter<float>  gainR(dsp::Db::fromLinear(0.6f));
+filter::SimpleSoftLimiter<float> limiter(dsp::Db::fromLinear(0.9f));
 
 dsp::AudioGraph<float> graph;
 

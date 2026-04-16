@@ -85,12 +85,10 @@ public:
 
         const size_t nodeCount = _nodes.size();
 
-        //topological sort — returns node indices in dependency order
+        // topological sort — returns node indices in dependency order
         std::vector<std::vector<size_t>> inputAdj(nodeCount);
 
-        std::ranges::transform(_nodes, inputAdj.begin(), [](const auto& n) {
-            return n.inputIndices;
-        });
+        std::ranges::transform(_nodes, inputAdj.begin(), [](const auto& n) { return n.inputIndices; });
 
         auto perm = sorter(nodeCount, inputAdj);
 
@@ -121,9 +119,8 @@ public:
         for (auto& node : _nodes) {
             node.outputCount = 0;
 
-            std::ranges::transform(node.inputIndices, node.inputIndices.begin(), [&inv](size_t idx) {
-                return inv[idx];
-            });
+            std::ranges::transform(
+                node.inputIndices, node.inputIndices.begin(), [&inv](size_t idx) { return inv[idx]; });
 
             for (auto idx : node.inputIndices) {
                 ++_nodes[idx].outputCount;
@@ -132,8 +129,7 @@ public:
 
         // assign activeBuffer
         for (auto& node : _nodes) {
-            bool canShare = node.inputIndices.size() == 1
-                && _nodes[node.inputIndices[0]].outputCount == 1;
+            bool canShare = node.inputIndices.size() == 1 && _nodes[node.inputIndices[0]].outputCount == 1;
 
             if (canShare) {
                 node.activeBuffer = _nodes[node.inputIndices[0]].activeBuffer;

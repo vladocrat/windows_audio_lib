@@ -16,6 +16,7 @@
 #include <slk/dsp/dsp.h>
 #include <slk/dsp/window.h>
 #include <slk/audioformat.h>
+#include <slk/types.h>
 
 static constexpr size_t kWindowSize = 1024;
 
@@ -38,8 +39,8 @@ int main()
         return 1;
     }
 
-    const float sampleRate = static_cast<float>(input->format().sampleRate());
-    std::cout << "Sample rate: " << sampleRate << "\n";
+    const slk::dsp::Hertz sampleRate(static_cast<float>(input->format().sampleRate()));
+    std::cout << "Sample rate: " << sampleRate.count() << "\n";
 
     slk::Window<slk::WindowType::Hann, float, kWindowSize> window;
     std::vector<float> accumulator;

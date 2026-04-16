@@ -136,7 +136,7 @@ TEST_F(DeviceTest, PlaybackBrief)
     const auto totalSamples = static_cast<size_t>(sampleRate * channels); // ~1 sec worth
 
     slk::RingBuffer<float> ring(totalSamples);
-    auto noise = slk::dsp::whiteNoise<float>(totalSamples, 0.05f);
+    auto noise = slk::dsp::whiteNoise<float>(totalSamples, slk::dsp::Db::fromLinear(0.05f));
     ring.write(noise.data());
 
     output->setSource(ring);

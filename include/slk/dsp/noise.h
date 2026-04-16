@@ -19,18 +19,20 @@
 #include <random>
 
 #include <slk/audiobuffer.h>
+#include <slk/types.h>
 
 namespace slk::dsp
 {
 
 template <class SampleType>
-AudioBuffer<SampleType> whiteNoise(const size_t numSamples, const SampleType amplitude = 1.0f)
+AudioBuffer<SampleType> whiteNoise(const size_t numSamples, const Db amplitude = Db::fromLinear(1.0f))
 {
     AudioBuffer<SampleType> buffer(1, numSamples);
+    const auto linear = static_cast<SampleType>(amplitude.count());
 
     std::random_device rd;
     std::mt19937 gen(rd());
-    std::uniform_real_distribution<SampleType> dist(-amplitude, amplitude);
+    std::uniform_real_distribution<SampleType> dist(-linear, linear);
 
     for (size_t i = 0; i < numSamples; i++) {
         buffer[i] = dist(gen);
