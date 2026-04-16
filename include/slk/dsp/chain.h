@@ -16,29 +16,35 @@
 
 #pragma once
 
-// Core types and enumerations
-#include <slk/general.h>
-#include <slk/types.h>
+#include <tuple>
 
-// Audio data structures
 #include <slk/audiobuffer.h>
-#include <slk/audioformat.h>
-#include <slk/audiofile.h>
-#include <slk/ringbuffer.h>
-
-// Device abstraction
-#include <slk/device.h>
-#include <slk/inputdevice.h>
-#include <slk/outputdevice.h>
-#include <slk/deviceexplorer.h>
-#include <slk/devicemanager.h>
-
-// DSP
-#include <slk/dsp/complex.h>
-#include <slk/dsp/dsp.h>
-#include <slk/dsp/filter.h>
-#include <slk/dsp/noise.h>
-#include <slk/dsp/window.h>
 #include <slk/dsp/processor.h>
-#include <slk/dsp/chain.h>
-#include <slk/dsp/graph.h>
+
+namespace slk::dsp
+{
+
+template <class T, Processor<T>... Fs>
+class FilterChain
+{
+public:
+    explicit FilterChain(Fs&... filters) : _filters { filters... }
+    {
+    }
+
+    void operator()(slk::AudioBuffer<T>& buf)
+    {
+        std::apply([&buf](auto&... fs) { (fs(buf), ...); }, _filters);
+    }
+
+private:
+    std::tuple<Fs&...> _filters;
+};
+
+template <class T, class... Fs>
+FilterChain<T, Fs...> makeChain(Fs&... filters)
+{
+    return FilterChain<T, Fs...> { filters... };
+}
+
+} // namespace slk::dsp

@@ -22,6 +22,8 @@ A C++20 Windows audio library built on WASAPI. It provides device enumeration, l
 - **Audio playback** — `OutputDevice` fed from a lock-free `RingBuffer<float>`
 - **WAV file I/O** — read/write WAV files with automatic format handling
 - **DSP** — DFT, low-pass filter, window functions (Hann, FlatTop), white noise generator
+- **Filter chain** — compose multiple filters into a single callable via `makeChain<T>()`
+- **Audio graph** — `AudioGraph<T>` for arbitrary DAG topologies with automatic buffer management and implicit mixing
 - **Audio buffers** — multi-channel `AudioBuffer<T>`, lock-free `RingBuffer<T>`, functional filter piping (`buffer | filter`)
 
 ---
@@ -170,6 +172,57 @@ auto input = manager.createInputDevice(devices[0]);
 
 input->open();
 input->start();
+```
+
+### FilterChain
+
+```cpp
+#include <slk/dsp/chain.h>
+#include <slk/dsp/filter.h>
+
+using namespace slk;
+
+filter::SimpleGainFilter<float>  gain(1.5f);
+filter::LowPassFilter<float>     lpf(1000.0f, 48000.0f);
+filter::SimpleSoftLimiter<float> limiter(0.9f);
+
+auto chain = dsp::makeChain<float>(gain, lpf, limiter);
+
+AudioBuffer<float> buf(2, 512);
+chain(buf);           // applies gain → lpf → limiter in order
+// or: buf | chain;   // pipe syntax
+```
+
+### AudioGraph
+
+```cpp
+#include <slk/dsp/graph.h>
+#include <slk/dsp/filter.h>
+
+using namespace slk;
+
+filter::SimpleGainFilter<float>  gainL(0.8f);
+filter::SimpleGainFilter<float>  gainR(0.6f);
+filter::SimpleSoftLimiter<float> limiter(0.9f);
+
+dsp::AudioGraph<float> graph;
+
+auto hL   = graph.addNode(gainL);
+auto hR   = graph.addNode(gainR);
+auto hLim = graph.addNode(limiter);
+
+// Both paths feed into the limiter — buffers are summed automatically
+graph.connect(hL,  hLim);
+graph.connect(hR,  hLim);
+graph.setOutput(hLim);
+
+graph.compile(2, 512);   // channels, samples per buffer
+
+AudioBuffer<float> buf(2, 512);
+graph.process(buf);
+
+// Or use as a device callback:
+// device->setProcessCallback(graph.asCallback());
 ```
 
 ### DSP: compute a frequency spectrum

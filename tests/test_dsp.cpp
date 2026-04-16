@@ -6,6 +6,9 @@
 #include <slk/dsp/complex.h>
 #include <slk/dsp/dsp.h>
 #include <slk/dsp/window.h>
+#include <slk/dsp/processor.h>
+#include <slk/dsp/chain.h>
+#include <slk/dsp/graph.h>
 
 #include <cmath>
 #include <numbers>
@@ -222,4 +225,192 @@ TEST(DSP, FreqMag)
         float expectedFreq = static_cast<float>(k) * sampleRate / (2.0f * static_cast<float>(spectrum.size()));
         EXPECT_NEAR(freqMags[k].first, expectedFreq, 1e-2f);
     }
+}
+
+// ── FilterChain ───────────────────────────────────────────────────────────────
+
+TEST(FilterChain, AppliesFiltersInOrder)
+{
+    slk::AudioBuffer<float> buf(1, 32);
+
+    for (auto& s : buf)
+        s = 0.1f;
+
+    slk::filter::SimpleGainFilter<float> gain(10.0f);
+    slk::filter::SimpleSoftLimiter<float> limiter(0.9f);
+    auto chain = slk::dsp::makeChain<float>(gain, limiter);
+    chain(buf);
+
+    for (const auto& s : buf) {
+        EXPECT_GT(s, 0.0f);
+        EXPECT_LT(s, 2.0f);
+    }
+}
+
+TEST(FilterChain, SatisfiesPipeOperator)
+{
+    slk::AudioBuffer<float> buf(1, 32);
+
+    for (auto& s : buf)
+        s = 0.5f;
+
+    slk::filter::SimpleGainFilter<float> gain(2.0f);
+    auto chain = slk::dsp::makeChain<float>(gain);
+
+    buf | chain;
+
+    for (const auto& s : buf)
+        EXPECT_NEAR(s, 1.0f, 1e-4f);
+}
+
+TEST(FilterChain, MultipleFilters)
+{
+    slk::AudioBuffer<float> buf(1, 32);
+
+    for (auto& s : buf)
+        s = 0.5f;
+
+    slk::filter::SimpleGainFilter<float> gain1(2.0f);
+    slk::filter::SimpleGainFilter<float> gain2(2.0f);
+    auto chain = slk::dsp::makeChain<float>(gain1, gain2);
+    chain(buf);
+
+    for (const auto& s : buf)
+        EXPECT_NEAR(s, 2.0f, 1e-4f);
+}
+
+// ── AudioGraph ────────────────────────────────────────────────────────────────
+
+TEST(AudioGraph, LinearChain)
+{
+    slk::filter::SimpleGainFilter<float> gain(2.0f);
+
+    slk::dsp::AudioGraph<float> graph;
+    auto h = graph.addNode(gain);
+    graph.setOutput(h);
+    graph.compile(1, 16);
+
+    slk::AudioBuffer<float> buf(1, 16);
+
+    for (auto& s : buf)
+        s = 0.3f;
+
+    graph.process(buf);
+
+    for (const auto& s : buf)
+        EXPECT_NEAR(s, 0.6f, 1e-4f);
+}
+
+TEST(AudioGraph, SourceSeesOriginalBuffer)
+{
+    slk::filter::SimpleGainFilter<float> gain(2.0f);
+
+    slk::dsp::AudioGraph<float> graph;
+    auto h = graph.addNode(gain);
+    graph.setOutput(h);
+    graph.compile(1, 16);
+
+    slk::AudioBuffer<float> buf(1, 16);
+
+    for (auto& s : buf)
+        s = 0.5f;
+
+    graph.process(buf);
+
+    for (const auto& s : buf)
+        EXPECT_NEAR(s, 1.0f, 1e-4f);
+}
+
+TEST(AudioGraph, FanOutPreservesIndependentPaths)
+{
+    // Source fans out to gain1 and gain2.
+    // Only the gain2 branch leads to the output.
+    // gain1 must not corrupt gain2's buffer.
+    slk::filter::SimpleGainFilter<float> gain1(2.0f);
+    slk::filter::SimpleGainFilter<float> gain2(0.5f);
+
+    slk::dsp::AudioGraph<float> graphA;
+    auto hG1a = graphA.addNode(gain1);
+    auto hG2a = graphA.addNode(gain2);
+
+    // both read from the same source node (implicit fan-out)
+    graphA.setOutput(hG2a);
+    graphA.compile(1, 16);
+
+    slk::dsp::AudioGraph<float> graphB;
+    auto hG1b = graphB.addNode(gain1);
+    auto hG2b = graphB.addNode(gain2);
+
+    graphB.connect(hG1b, hG2b);
+    graphB.setOutput(hG2b);
+    graphB.compile(1, 16);
+
+    slk::AudioBuffer<float> bufA(1, 16);
+    slk::AudioBuffer<float> bufB(1, 16);
+
+    for (auto& s : bufA)
+        s = 0.4f;
+    for (auto& s : bufB)
+        s = 0.4f;
+
+    graphA.process(bufA);
+    graphB.process(bufB);
+
+    // graphA: source(0.4) → gain2(0.5) = 0.2
+    for (const auto& s : bufA)
+        EXPECT_NEAR(s, 0.2f, 1e-4f);
+
+    // graphB: source(0.4) → gain1(2.0) → gain2(0.5) = 0.4
+    for (const auto& s : bufB)
+        EXPECT_NEAR(s, 0.4f, 1e-4f);
+}
+
+TEST(AudioGraph, ImplicitMixSumsTwoPaths)
+{
+    slk::filter::SimpleGainFilter<float> gain1(0.3f);
+    slk::filter::SimpleGainFilter<float> gain2(0.3f);
+    slk::filter::SimpleGainFilter<float> output(1.0f);
+
+    slk::dsp::AudioGraph<float> graph;
+    auto hG1 = graph.addNode(gain1);
+    auto hG2 = graph.addNode(gain2);
+    auto hOut = graph.addNode(output);
+
+    graph.connect(hG1, hOut);
+    graph.connect(hG2, hOut);
+    graph.setOutput(hOut);
+    graph.compile(1, 16);
+
+    slk::AudioBuffer<float> buf(1, 16);
+
+    for (auto& s : buf)
+        s = 1.0f;
+
+    graph.process(buf);
+
+    // 1.0 * 0.3 + 1.0 * 0.3 = 0.6
+    for (const auto& s : buf)
+        EXPECT_NEAR(s, 0.6f, 1e-4f);
+}
+
+TEST(AudioGraph, AsCallback)
+{
+    slk::filter::SimpleGainFilter<float> gain(3.0f);
+
+    slk::dsp::AudioGraph<float> graph;
+    auto h = graph.addNode(gain);
+    graph.setOutput(h);
+    graph.compile(1, 8);
+
+    auto cb = graph.asCallback();
+
+    slk::AudioBuffer<float> buf(1, 8);
+
+    for (auto& s : buf)
+        s = 0.1f;
+
+    cb(buf);
+
+    for (const auto& s : buf)
+        EXPECT_NEAR(s, 0.3f, 1e-4f);
 }

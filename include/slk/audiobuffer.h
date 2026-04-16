@@ -77,27 +77,15 @@ public:
         return *this;
     }
 
-    AudioBuffer& operator+=(const std::vector<const AudioBuffer<SampleType>*>& sources)
+    AudioBuffer& operator+=(const AudioBuffer& other)
     {
-        std::vector<SampleType> acc(_data.size(), 0.0);
+        assert(other._numChannels == _numChannels && other._numSamples == _numSamples);
 
-        for (const auto* src : sources) {
-            assert(src->channels() == _numChannels && src->numSamples() == _numSamples);
-            std::transform(acc.begin(), acc.end(), src->data().begin(), acc.begin(), std::plus<SampleType> {});
-        }
-
-        std::transform(acc.begin(), acc.end(), _data.begin(), [](SampleType s) {
-            return std::clamp(s, SampleType { -1 }, SampleType { 1 });
+        std::transform(_data.begin(), _data.end(), other._data.begin(), _data.begin(), [](SampleType a, SampleType b) {
+            return std::clamp(a + b, SampleType { -1 }, SampleType { 1 });
         });
 
         return *this;
-    }
-
-    AudioBuffer operator+(const std::vector<const AudioBuffer<SampleType>*>& sources) const
-    {
-        AudioBuffer out(*this);
-        out += sources;
-        return out;
     }
 
     void setSize(const uint32_t numChannels, const uint32_t numSamples)

@@ -25,6 +25,10 @@ set(PUBLIC_HEADERS
     include/slk/dsp/filter.h
     include/slk/dsp/noise.h
     include/slk/dsp/window.h
+    include/slk/dsp/processor.h
+    include/slk/dsp/chain.h
+    include/slk/dsp/graph.h
+    include/slk/dsp/kahn.h
 )
 
 set(PRIVATE_HEADERS
@@ -41,6 +45,7 @@ set(SOURCES
     src/devicemanager.cpp
     src/dsp.cpp
     src/filter.cpp
+    src/kahn.cpp
     src/noise.cpp
     src/ringbuffer.cpp
     src/types.cpp

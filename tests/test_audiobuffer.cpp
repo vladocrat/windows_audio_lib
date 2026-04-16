@@ -128,23 +128,20 @@ TEST(AudioBuffer, PipeOperator)
         EXPECT_FLOAT_EQ(s, 0.5f);
 }
 
-TEST(AudioBuffer, MixOperator)
+TEST(AudioBuffer, AddAssign)
 {
-    slk::AudioBuffer<float> dst(1, 4);
-    dst.clear();
+    slk::AudioBuffer<float> a(1, 4);
+    slk::AudioBuffer<float> b(1, 4);
 
-    slk::AudioBuffer<float> src1(1, 4);
-    slk::AudioBuffer<float> src2(1, 4);
     for (uint32_t i = 0; i < 4; ++i) {
-        src1[i] = 0.7f;
-        src2[i] = 0.6f;
+        a[i] = 0.7f;
+        b[i] = 0.6f;
     }
 
-    std::vector<const slk::AudioBuffer<float>*> sources = { &src1, &src2 };
-    dst += sources;
+    a += b;
 
     for (uint32_t i = 0; i < 4; ++i)
-        EXPECT_FLOAT_EQ(dst[i], 1.0f); // clamped from 1.3
+        EXPECT_FLOAT_EQ(a[i], 1.0f); // clamped from 1.3
 }
 
 TEST(AudioBuffer, CopyConstruct)

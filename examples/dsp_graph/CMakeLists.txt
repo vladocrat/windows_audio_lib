@@ -1,0 +1,2 @@
+add_executable(example_dsp_graph main.cpp)
+target_link_libraries(example_dsp_graph PRIVATE sound_capture)

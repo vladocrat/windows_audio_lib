@@ -16,29 +16,16 @@
 
 #pragma once
 
-// Core types and enumerations
-#include <slk/general.h>
-#include <slk/types.h>
+#include <optional>
+#include <vector>
 
-// Audio data structures
-#include <slk/audiobuffer.h>
-#include <slk/audioformat.h>
-#include <slk/audiofile.h>
-#include <slk/ringbuffer.h>
+namespace slk::dsp
+{
 
-// Device abstraction
-#include <slk/device.h>
-#include <slk/inputdevice.h>
-#include <slk/outputdevice.h>
-#include <slk/deviceexplorer.h>
-#include <slk/devicemanager.h>
+struct KahnTopologicalSort
+{
+    std::optional<std::vector<size_t>> operator()(size_t nodeCount,
+                                                  const std::vector<std::vector<size_t>>& inputAdj) const;
+};
 
-// DSP
-#include <slk/dsp/complex.h>
-#include <slk/dsp/dsp.h>
-#include <slk/dsp/filter.h>
-#include <slk/dsp/noise.h>
-#include <slk/dsp/window.h>
-#include <slk/dsp/processor.h>
-#include <slk/dsp/chain.h>
-#include <slk/dsp/graph.h>
+} // namespace slk::dsp
