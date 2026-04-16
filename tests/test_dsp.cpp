@@ -17,6 +17,7 @@
 
 using slk::dsp::Hertz;
 using slk::dsp::Db;
+using namespace slk::dsp::literals;
 
 TEST(DSP, WhiteNoiseSize)
 {
@@ -67,7 +68,7 @@ TEST(DSP, LowPassFilter)
     for (uint32_t i = 0; i < 64; ++i)
         buf[i] = (i % 2 == 0) ? 1.0f : -1.0f;
 
-    slk::filter::LowPassFilter<float> lpf(Hertz(1000.0f), Hertz(48000.0f));
+    slk::filter::LowPassFilter<float> lpf(1_kHz, 48_kHz);
     buf | lpf;
 
     float maxAbs = 0.0f;
@@ -183,7 +184,7 @@ TEST(DSP, DFTPeakBin)
     // DFT angle = -2*pi*k*n/N, so bin k corresponds to freq = k * sampleRate / N.
     // N=64 samples, sampleRate=6400 Hz, bin k=5 -> freq = 5 * 6400 / 64 = 500 Hz
     constexpr size_t N = 64;
-    const Hertz sampleRate(6400.0f);
+    const auto sampleRate = 6400_Hz;
     constexpr size_t targetBin = 5;
 
     slk::AudioBuffer<float> buf(1, N);
@@ -212,7 +213,7 @@ TEST(DSP, DFTPeakBin)
 TEST(DSP, FreqMag)
 {
     constexpr size_t N = 64;
-    const Hertz sampleRate(6400.0f);
+    const auto sampleRate = 6400_Hz;
 
     slk::AudioBuffer<float> buf(1, N);
     for (size_t i = 0; i < N; ++i)
@@ -373,7 +374,7 @@ TEST(AudioGraph, ImplicitMixSumsTwoPaths)
 {
     slk::filter::SimpleGainFilter<float> gain1(Db::fromLinear(0.3f));
     slk::filter::SimpleGainFilter<float> gain2(Db::fromLinear(0.3f));
-    slk::filter::SimpleGainFilter<float> output(Db::fromLinear(1.0f));
+    slk::filter::SimpleGainFilter<float> output(0_dB);
 
     slk::dsp::AudioGraph<float> graph;
     auto hG1 = graph.addNode(gain1);

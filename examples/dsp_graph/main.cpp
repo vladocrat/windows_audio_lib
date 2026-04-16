@@ -36,6 +36,8 @@
 #include <slk/dsp/noise.h>
 #include <slk/types.h>
 
+using namespace slk::dsp::literals;
+
 // ── Application-side graph descriptor (not part of the library) ──────────────
 //
 // A real GUI application would have richer types here (positions, colours,
@@ -113,11 +115,11 @@ int main()
     // ── FilterChain ──────────────────────────────────────────────────────────
     std::cout << "--- FilterChain ---\n";
 
-    auto noiseBuf = slk::dsp::whiteNoise<float>(512, slk::dsp::Db::fromLinear(0.8f));
+    auto noiseBuf = slk::dsp::whiteNoise<float>(512, -2_dB);
 
-    slk::filter::LowPassFilter<float>     lpf(slk::dsp::Hertz(1000.0f), slk::dsp::Hertz(48000.0f));
-    slk::filter::SimpleGainFilter<float>  gain(slk::dsp::Db::fromLinear(1.5f));
-    slk::filter::SimpleSoftLimiter<float> limiter(slk::dsp::Db::fromLinear(0.9f));
+    slk::filter::LowPassFilter<float>     lpf(1_kHz, 48_kHz);
+    slk::filter::SimpleGainFilter<float>  gain(4_dB);
+    slk::filter::SimpleSoftLimiter<float> limiter(-1_dB);
 
     auto chain = slk::dsp::makeChain<float>(lpf, gain, limiter);
     chain(noiseBuf);
@@ -135,9 +137,9 @@ int main()
     // Graph topology:
     //   [input] ──► [gain x2.0] ──► [lpf 500Hz] ──► [limiter 0.9] ──► output
 
-    slk::filter::SimpleGainFilter<float>  gainHigh(slk::dsp::Db::fromLinear(2.0f));
-    slk::filter::LowPassFilter<float>     lpfLow(slk::dsp::Hertz(500.0f), slk::dsp::Hertz(48000.0f));
-    slk::filter::SimpleSoftLimiter<float> graphLimiter(slk::dsp::Db::fromLinear(0.9f));
+    slk::filter::SimpleGainFilter<float>  gainHigh(6_dB);
+    slk::filter::LowPassFilter<float>     lpfLow(500_Hz, 48_kHz);
+    slk::filter::SimpleSoftLimiter<float> graphLimiter(-1_dB);
 
     slk::dsp::AudioGraph<float> graph;
 

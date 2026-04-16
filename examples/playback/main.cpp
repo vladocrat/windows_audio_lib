@@ -16,6 +16,8 @@
 #include <slk/audioformat.h>
 #include <slk/types.h>
 
+using namespace slk::dsp::literals;
+
 int main()
 {
 #ifdef _WIN32
@@ -44,7 +46,7 @@ int main()
     // Ring buffer capacity must be a power of 2 and larger than totalSamples
     slk::RingBuffer<float> ring(524288); // 2^19 ~ 11 sec at 48 kHz stereo
 
-    auto noise = slk::dsp::whiteNoise<float>(totalSamples, slk::dsp::Db::fromLinear(0.05f));
+    auto noise = slk::dsp::whiteNoise<float>(totalSamples, -26_dB);
     ring.write(std::span<const float>(noise.data().data(), noise.size()));
 
     output->setSource(ring);

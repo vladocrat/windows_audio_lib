@@ -102,13 +102,14 @@ for (const auto& desc : inputDevices) {
 // #include <slk/dsp/filter.h>
 
 using namespace slk;
+using namespace slk::dsp::literals;
 
 DeviceManager manager;
 auto input = manager.defaultInputDevice(Purpose::Multimedia);
 
 // Optional: process each buffer in-place
 dsp::Hertz sampleRate(static_cast<float>(input->format().sampleRate()));
-filter::LowPassFilter<float> lpf(dsp::Hertz(5000.0f), sampleRate);
+filter::LowPassFilter<float> lpf(5_kHz, sampleRate);
 input->setProcessCallback([&](AudioBuffer<float>& buf) {
     buf | lpf;
 });
@@ -183,10 +184,11 @@ input->start();
 #include <slk/dsp/filter.h>
 
 using namespace slk;
+using namespace slk::dsp::literals;
 
-filter::SimpleGainFilter<float>  gain(dsp::Db::fromLinear(1.5f));
-filter::LowPassFilter<float>     lpf(dsp::Hertz(1000.0f), dsp::Hertz(48000.0f));
-filter::SimpleSoftLimiter<float> limiter(dsp::Db::fromLinear(0.9f));
+filter::SimpleGainFilter<float>  gain(4_dB);
+filter::LowPassFilter<float>     lpf(1_kHz, 48_kHz);
+filter::SimpleSoftLimiter<float> limiter(-1_dB);
 
 auto chain = dsp::makeChain<float>(gain, lpf, limiter);
 
@@ -202,10 +204,11 @@ chain(buf);           // applies gain → lpf → limiter in order
 #include <slk/dsp/filter.h>
 
 using namespace slk;
+using namespace slk::dsp::literals;
 
-filter::SimpleGainFilter<float>  gainL(dsp::Db::fromLinear(0.8f));
-filter::SimpleGainFilter<float>  gainR(dsp::Db::fromLinear(0.6f));
-filter::SimpleSoftLimiter<float> limiter(dsp::Db::fromLinear(0.9f));
+filter::SimpleGainFilter<float>  gainL(-2_dB);
+filter::SimpleGainFilter<float>  gainR(-4_dB);
+filter::SimpleSoftLimiter<float> limiter(-1_dB);
 
 dsp::AudioGraph<float> graph;
 

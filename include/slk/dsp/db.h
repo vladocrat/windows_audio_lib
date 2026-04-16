@@ -31,6 +31,7 @@ struct Db
 
     auto operator<=>(const Db&) const = default;
 
+    Db operator-() const noexcept;
     Db operator*(Db rhs) const noexcept;
     Db operator*(float s) const noexcept;
     Db operator/(float s) const noexcept;

@@ -30,6 +30,11 @@ float Db::count() const noexcept
     return value;
 }
 
+Db Db::operator-() const noexcept
+{
+    return fromLinear(1.0f / value);
+}
+
 Db Db::operator*(Db rhs) const noexcept
 {
     return fromLinear(value * rhs.value);

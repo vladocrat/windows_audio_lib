@@ -16,6 +16,8 @@
 #include <slk/audioformat.h>
 #include <slk/types.h>
 
+using namespace slk::dsp::literals;
+
 int main()
 {
 #ifdef _WIN32
@@ -39,7 +41,7 @@ int main()
     const uint32_t channels = input->format().channels();
     std::cout << "Sample rate: " << sampleRate.count() << "  Channels: " << channels << "\n";
 
-    slk::filter::LowPassFilter<float> lpf(slk::dsp::Hertz(8000.0f), sampleRate);
+    slk::filter::LowPassFilter<float> lpf(8_kHz, sampleRate);
     std::atomic<int> bufferCount { 0 };
 
     input->setProcessCallback([&](slk::AudioBuffer<float>& buf) {

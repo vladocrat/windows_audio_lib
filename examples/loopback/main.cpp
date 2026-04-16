@@ -18,6 +18,8 @@
 #include <slk/dsp/filter.h>
 #include <slk/types.h>
 
+using namespace slk::dsp::literals;
+
 namespace
 {
 
@@ -100,8 +102,8 @@ int main()
 
     output->setSource(ring);
 
-    slk::filter::SimpleGainFilter<float> gain(slk::dsp::Db::fromLinear(5.f));
-    slk::filter::SimpleSoftLimiter<float> limiter(slk::dsp::Db::fromLinear(0.9f));
+    slk::filter::SimpleGainFilter<float> gain(14_dB);
+    slk::filter::SimpleSoftLimiter<float> limiter(-1_dB);
 
     input->setProcessCallback([&](slk::AudioBuffer<float>& buf) {
         buf | gain | limiter;

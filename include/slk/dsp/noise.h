@@ -25,7 +25,7 @@ namespace slk::dsp
 {
 
 template <class SampleType>
-AudioBuffer<SampleType> whiteNoise(const size_t numSamples, const Db amplitude = Db::fromLinear(1.0f))
+AudioBuffer<SampleType> whiteNoise(const size_t numSamples, const Db amplitude = Db(0.0f))
 {
     AudioBuffer<SampleType> buffer(1, numSamples);
     const auto linear = static_cast<SampleType>(amplitude.count());
