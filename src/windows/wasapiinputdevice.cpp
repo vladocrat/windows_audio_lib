@@ -101,7 +101,7 @@ bool WASAPIInputDevice::start()
     // the stop signal so a single SetEvent reliably wakes (and stays
     // observed by) the loop on the next WaitForMultipleObjects iteration.
     impl().deviceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
-    impl().stopEvent   = CreateEvent(nullptr, TRUE,  FALSE, nullptr);
+    impl().stopEvent = CreateEvent(nullptr, TRUE, FALSE, nullptr);
 
     if (!impl().deviceEvent || !impl().stopEvent) {
         return false;
