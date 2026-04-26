@@ -10,7 +10,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest, macos-latest]
+        os: [windows-latest, macos-latest, ubuntu-latest]
         build_type: [Debug, Release]
 
     runs-on: ${{ matrix.os }}
@@ -21,12 +21,17 @@ jobs:
       - name: Configure
         run: cmake -B build -DBUILD_TESTS=ON -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
 
+      # Build both the unit and integration targets on every platform so
+      # they don't bit-rot. Integration tests need real audio hardware and
+      # are not executed in CI — only unit tests run.
       - name: Build
-        run: cmake --build build --config ${{ matrix.build_type }}
+        run: |
+          cmake --build build --config ${{ matrix.build_type }} --target audio_lib_unit_tests
+          cmake --build build --config ${{ matrix.build_type }} --target audio_lib_integration_tests
 
-      - name: Test
+      - name: Run unit tests
         working-directory: build
-        run: ctest --output-on-failure -C ${{ matrix.build_type }} --exclude-regex "DeviceTest\."
+        run: ctest --output-on-failure -C ${{ matrix.build_type }} -R audio_lib_unit_tests
 
   clang-format:
     strategy:
