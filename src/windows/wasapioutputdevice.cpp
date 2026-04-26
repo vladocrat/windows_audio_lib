@@ -36,7 +36,12 @@ struct WASAPIOutputDevice::impl_t // NOLINT(cppcoreguidelines-special-member-fun
     RingBuffer<float>* source { nullptr };
     WASAPIOutputDevice::ProcessCallback processCallback {};
     std::atomic_bool shouldStop { false };
+    // Auto-reset event signalled by WASAPI when the render slot is ready.
     HANDLE deviceEvent { nullptr };
+    // Manual-reset event signalled by stop(); the render loop waits on
+    // this alongside deviceEvent so it can wake without stop() ever
+    // closing a handle that the worker thread is mid-Wait* on.
+    HANDLE stopEvent { nullptr };
 
     impl_t(DeviceInfo&& info) : device(std::move(info))
     {
@@ -50,6 +55,10 @@ struct WASAPIOutputDevice::impl_t // NOLINT(cppcoreguidelines-special-member-fun
 
         if (deviceEvent) {
             CloseHandle(deviceEvent);
+        }
+
+        if (stopEvent) {
+            CloseHandle(stopEvent);
         }
     }
 };
@@ -95,9 +104,14 @@ bool WASAPIOutputDevice::close()
 bool WASAPIOutputDevice::start()
 {
     impl().shouldStop = false;
-    impl().deviceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
 
-    if (!impl().deviceEvent) {
+    // Auto-reset for the WASAPI render-slot notification, manual-reset for
+    // the stop signal so a single SetEvent reliably wakes (and stays
+    // observed by) the loop on the next WaitForMultipleObjects iteration.
+    impl().deviceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+    impl().stopEvent   = CreateEvent(nullptr, TRUE,  FALSE, nullptr);
+
+    if (!impl().deviceEvent || !impl().stopEvent) {
         return false;
     }
 
@@ -113,11 +127,20 @@ bool WASAPIOutputDevice::start()
 
     const auto channels = impl().device.format().channels();
 
+    HANDLE waitHandles[2] = { impl().deviceEvent, impl().stopEvent };
+
     while (!impl().shouldStop) {
-        const auto result = WaitForSingleObject(impl().deviceEvent, 2000);
+        const auto result = WaitForMultipleObjects(2, waitHandles, FALSE, 2000);
 
         if (result == WAIT_TIMEOUT) {
             continue;
+        }
+
+        // Stop event fired — exit cleanly. The handle is owned by impl_t
+        // and only released after the loop returns, so we never wait on a
+        // handle that another thread is about to close.
+        if (result == WAIT_OBJECT_0 + 1) {
+            break;
         }
 
         if (result != WAIT_OBJECT_0) {
@@ -159,21 +182,34 @@ bool WASAPIOutputDevice::start()
         impl().client->ReleaseBuffer(numFramesAvailable, 0);
     }
 
+    // Loop has exited — safe to release the WASAPI clock and the wait
+    // handles. Doing this here (rather than in stop()) guarantees no
+    // other thread is inside WaitForMultipleObjects on these handles.
+    impl().device.audioClient()->Stop();
+
+    if (impl().deviceEvent) {
+        CloseHandle(impl().deviceEvent);
+        impl().deviceEvent = nullptr;
+    }
+
+    if (impl().stopEvent) {
+        CloseHandle(impl().stopEvent);
+        impl().stopEvent = nullptr;
+    }
+
     return true;
 }
 
 bool WASAPIOutputDevice::stop()
 {
+    // Signal the render loop to exit. The loop owns the handle lifetime
+    // and will close both events itself before start() returns. Callers
+    // are still expected to join the worker thread (e.g. via the future
+    // tracking start()) before destroying or reopening the device.
     impl().shouldStop = true;
 
-    if (impl().device.audioClient()) {
-        impl().device.audioClient()->Stop();
-    }
-
-    if (impl().deviceEvent) {
-        SetEvent(impl().deviceEvent);
-        CloseHandle(impl().deviceEvent);
-        impl().deviceEvent = nullptr;
+    if (impl().stopEvent) {
+        SetEvent(impl().stopEvent);
     }
 
     return true;
