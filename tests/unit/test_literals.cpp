@@ -81,6 +81,27 @@ TEST(Literals, DbArithmetic)
     EXPECT_FLOAT_EQ((a * 2.0f).count(), 1.0f);
 }
 
+TEST(Literals, DbUnaryMinusInverts)
+{
+    auto a = slk::dsp::Db::fromLinear(0.25f);
+    auto inv = -a;
+    EXPECT_FLOAT_EQ(inv.count(), 4.0f);
+}
+
+TEST(Literals, DbDivideByScalar)
+{
+    auto a = slk::dsp::Db::fromLinear(1.0f);
+    auto half = a / 2.0f;
+    EXPECT_FLOAT_EQ(half.count(), 0.5f);
+}
+
+TEST(Literals, ScalarTimesDb)
+{
+    auto a = slk::dsp::Db::fromLinear(0.5f);
+    auto doubled = 4.0f * a; // free function: float * Db
+    EXPECT_FLOAT_EQ(doubled.count(), 2.0f);
+}
+
 // Type safety — Hertz comparisons
 TEST(Literals, HertzComparison)
 {
