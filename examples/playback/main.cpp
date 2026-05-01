@@ -51,13 +51,15 @@ int main()
 
     output->setSource(ring);
 
-    std::thread playbackThread([&output]() { output->start(); });
+    if (!output->start()) {
+        std::cerr << "Failed to start output device\n";
+        return 1;
+    }
 
     std::cout << "Playing white noise for 3 seconds...\n";
     std::this_thread::sleep_for(std::chrono::seconds(3));
 
     output->stop();
-    playbackThread.join();
     output->close();
 
 #ifdef _WIN32

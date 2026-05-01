@@ -109,12 +109,11 @@ TEST_F(DeviceTest, CaptureBrief)
     std::atomic<int> bufferCount { 0 };
     input->setProcessCallback([&](slk::AudioBuffer<float>&) { ++bufferCount; });
 
-    std::thread captureThread([&]() { input->start(); });
+    ASSERT_TRUE(input->start());
 
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
     input->stop();
-    captureThread.join();
     input->close();
 
     EXPECT_GT(bufferCount.load(), 0) << "Expected at least one buffer callback in 500ms";
@@ -142,12 +141,11 @@ TEST_F(DeviceTest, PlaybackBrief)
 
     output->setSource(ring);
 
-    std::thread playThread([&]() { output->start(); });
+    ASSERT_TRUE(output->start());
 
     std::this_thread::sleep_for(std::chrono::milliseconds(600));
 
     output->stop();
-    playThread.join();
     output->close();
 
     SUCCEED() << "Playback completed without crash";

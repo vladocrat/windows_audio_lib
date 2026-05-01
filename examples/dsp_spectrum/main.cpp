@@ -72,13 +72,15 @@ int main()
         }
     });
 
-    std::thread captureThread([&input]() { input->start(); });
+    if (!input->start()) {
+        std::cerr << "Failed to start input device\n";
+        return 1;
+    }
 
     std::cout << "Analysing for 5 seconds (1024-point Hann-windowed DFT)...\n";
     std::this_thread::sleep_for(std::chrono::seconds(5));
 
     input->stop();
-    captureThread.join();
     input->close();
 
 #ifdef _WIN32

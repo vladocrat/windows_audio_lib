@@ -23,6 +23,8 @@
 #ifdef WIN32
 #include <wrl/client.h>
 #include <mmdeviceapi.h>
+#elif defined(__APPLE__)
+#include <CoreAudio/CoreAudio.h>
 #endif
 
 namespace slk
@@ -36,12 +38,16 @@ struct DeviceInfo
 
 #ifdef WIN32
     Microsoft::WRL::ComPtr<IMMDevice> device;
+#elif defined(__APPLE__)
+    AudioDeviceID audioDeviceId { kAudioDeviceUnknown };
 #endif
 
     [[nodiscard]] bool isValid() const noexcept
     {
 #ifdef WIN32
         return device != nullptr;
+#elif defined(__APPLE__)
+        return audioDeviceId != kAudioDeviceUnknown;
 #else
         return false;
 #endif

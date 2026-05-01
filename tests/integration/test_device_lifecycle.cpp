@@ -1,8 +1,15 @@
-// Regression tests for the WASAPI{Input,Output}Device::stop() handle-close
-// race fix. Each test exercises a stop/start interleaving that, under the
-// pre-fix code, could close `deviceEvent` while the worker thread was inside
-// WaitForSingleObject on it (Win32 UB; manifested as crashes on some
-// hardware and silent voice dropouts on others).
+// Regression tests for the device start()/stop() handle-close race fix.
+//
+// Each test exercises a stop/start interleaving that, under a buggy
+// implementation, could close `deviceEvent` while the worker thread was
+// inside WaitForSingleObject on it (Win32 UB), or call AudioDeviceStop
+// while the IOProc was still executing (CoreAudio).
+//
+// With the managed-thread API:
+//   - start() is non-blocking; the device owns its own worker.
+//   - stop() is synchronous: it signals the worker, joins it, then closes
+//     handles. After stop() returns, no other thread is touching the
+//     event handles or IOProc.
 //
 // These are integration tests — they build everywhere but only execute on
 // machines with a real audio backend. CI should *build* this target and
@@ -50,10 +57,8 @@ TEST_F(DeviceLifecycleTest, InputStopWithoutStartIsNoOp)
     if (!input) GTEST_SKIP() << "no input device";
     if (!input->open()) GTEST_SKIP() << "cannot open input";
 
-    // stop() must be safe to call even before start() — there is no event,
-    // no worker, nothing to wake. Pre-fix the destructor's CloseHandle
-    // guard handled this; the regression is to make sure stop() itself
-    // remains a no-op.
+    // stop() must be safe to call before start() — there is no worker to
+    // join, no event to signal, no IOProc to destroy.
     EXPECT_TRUE(input->stop());
     EXPECT_TRUE(input->close());
 }
@@ -65,34 +70,26 @@ TEST_F(DeviceLifecycleTest, InputBasicStartStopCycle)
     if (!input) GTEST_SKIP() << "no input device";
     if (!input->open()) GTEST_SKIP() << "cannot open input";
 
-    std::atomic<bool> startReturned { false };
-    std::thread worker([&]() {
-        input->start();
-        startReturned.store(true, std::memory_order_release);
-    });
-
-    // Let the loop enter WaitForMultipleObjects at least once.
+    EXPECT_TRUE(input->start());
+    // Let the worker enter its wait loop at least once.
     std::this_thread::sleep_for(std::chrono::milliseconds(50));
-
     EXPECT_TRUE(input->stop());
-    worker.join();
-    EXPECT_TRUE(startReturned.load(std::memory_order_acquire));
     EXPECT_TRUE(input->close());
 }
 
 TEST_F(DeviceLifecycleTest, InputStopRightAfterStart)
 {
-    // Stop with a window so small the worker may not have hit Wait yet —
-    // the fix must handle this just as well as the well-rested case.
+    // Stop with a window so small the worker may not have entered its wait
+    // yet — the implementation must handle this just as well as the
+    // well-rested case.
     slk::DeviceManager manager;
     auto input = manager.defaultInputDevice();
     if (!input) GTEST_SKIP() << "no input device";
     if (!input->open()) GTEST_SKIP() << "cannot open input";
 
-    std::thread worker([&]() { input->start(); });
+    EXPECT_TRUE(input->start());
     // No sleep — race straight into stop().
-    input->stop();
-    worker.join();
+    EXPECT_TRUE(input->stop());
     EXPECT_TRUE(input->close());
 }
 
@@ -106,10 +103,9 @@ TEST_F(DeviceLifecycleTest, InputRapidRestartCycles)
     constexpr int kCycles = 10;
 
     for (int i = 0; i < kCycles; ++i) {
-        std::thread worker([&]() { input->start(); });
+        ASSERT_TRUE(input->start()) << "start failed on iteration " << i;
         std::this_thread::sleep_for(std::chrono::milliseconds(20));
         EXPECT_TRUE(input->stop()) << "stop failed on iteration " << i;
-        worker.join();
     }
 
     EXPECT_TRUE(input->close());
@@ -117,9 +113,10 @@ TEST_F(DeviceLifecycleTest, InputRapidRestartCycles)
 
 TEST_F(DeviceLifecycleTest, InputStopWhileCallbackBusy)
 {
-    // Set a callback that does nontrivial work each invocation so stop()
-    // is very likely to fire while the loop is mid-callback rather than
-    // sitting in Wait. The fix must still produce a clean shutdown.
+    // A callback that does nontrivial work each invocation so stop() is
+    // very likely to fire while the loop is mid-callback rather than
+    // sitting in its wait. The implementation must still produce a clean
+    // shutdown.
     slk::DeviceManager manager;
     auto input = manager.defaultInputDevice();
     if (!input) GTEST_SKIP() << "no input device";
@@ -131,10 +128,9 @@ TEST_F(DeviceLifecycleTest, InputStopWhileCallbackBusy)
         std::this_thread::sleep_for(std::chrono::milliseconds(2));
     });
 
-    std::thread worker([&]() { input->start(); });
+    EXPECT_TRUE(input->start());
     std::this_thread::sleep_for(std::chrono::milliseconds(80));
     EXPECT_TRUE(input->stop());
-    worker.join();
     EXPECT_TRUE(input->close());
 }
 
@@ -158,17 +154,9 @@ TEST_F(DeviceLifecycleTest, OutputBasicStartStopCycle)
     if (!output) GTEST_SKIP() << "no output device";
     if (!output->open()) GTEST_SKIP() << "cannot open output";
 
-    std::atomic<bool> startReturned { false };
-    std::thread worker([&]() {
-        output->start();
-        startReturned.store(true, std::memory_order_release);
-    });
-
+    EXPECT_TRUE(output->start());
     std::this_thread::sleep_for(std::chrono::milliseconds(50));
-
     EXPECT_TRUE(output->stop());
-    worker.join();
-    EXPECT_TRUE(startReturned.load(std::memory_order_acquire));
     EXPECT_TRUE(output->close());
 }
 
@@ -179,9 +167,8 @@ TEST_F(DeviceLifecycleTest, OutputStopRightAfterStart)
     if (!output) GTEST_SKIP() << "no output device";
     if (!output->open()) GTEST_SKIP() << "cannot open output";
 
-    std::thread worker([&]() { output->start(); });
-    output->stop();
-    worker.join();
+    EXPECT_TRUE(output->start());
+    EXPECT_TRUE(output->stop());
     EXPECT_TRUE(output->close());
 }
 
@@ -195,10 +182,9 @@ TEST_F(DeviceLifecycleTest, OutputRapidRestartCycles)
     constexpr int kCycles = 10;
 
     for (int i = 0; i < kCycles; ++i) {
-        std::thread worker([&]() { output->start(); });
+        ASSERT_TRUE(output->start()) << "start failed on iteration " << i;
         std::this_thread::sleep_for(std::chrono::milliseconds(20));
         EXPECT_TRUE(output->stop()) << "stop failed on iteration " << i;
-        worker.join();
     }
 
     EXPECT_TRUE(output->close());
@@ -217,10 +203,9 @@ TEST_F(DeviceLifecycleTest, OutputStopWhileCallbackBusy)
         std::this_thread::sleep_for(std::chrono::milliseconds(2));
     });
 
-    std::thread worker([&]() { output->start(); });
+    EXPECT_TRUE(output->start());
     std::this_thread::sleep_for(std::chrono::milliseconds(80));
     EXPECT_TRUE(output->stop());
-    worker.join();
     EXPECT_TRUE(output->close());
 }
 
@@ -234,22 +219,76 @@ TEST_F(DeviceLifecycleTest, InputCloseReopenStartStop)
 
     if (!input->open()) GTEST_SKIP() << "cannot open input";
     {
-        std::thread worker([&]() { input->start(); });
+        ASSERT_TRUE(input->start());
         std::this_thread::sleep_for(std::chrono::milliseconds(30));
-        input->stop();
-        worker.join();
+        EXPECT_TRUE(input->stop());
     }
     EXPECT_TRUE(input->close());
 
-    // Re-open on the same shared_ptr: the impl's events were nulled in
-    // start()'s epilogue, so a second open()/start()/stop() must not
-    // double-close the (already-released) handles.
+    // Re-open on the same shared_ptr: the impl's events / IOProc handles
+    // were nulled in stop(), so a second open()/start()/stop() must not
+    // double-close any of them.
     ASSERT_TRUE(input->open());
     {
-        std::thread worker([&]() { input->start(); });
+        ASSERT_TRUE(input->start());
         std::this_thread::sleep_for(std::chrono::milliseconds(30));
-        input->stop();
-        worker.join();
+        EXPECT_TRUE(input->stop());
     }
     EXPECT_TRUE(input->close());
+}
+
+// ── Managed-thread contract ──────────────────────────────────────────────────
+
+TEST_F(DeviceLifecycleTest, InputDoubleStartIsRejected)
+{
+    // start() must not silently spawn a second worker. Once running, a
+    // second start() returns false until stop() has been called.
+    slk::DeviceManager manager;
+    auto input = manager.defaultInputDevice();
+    if (!input) GTEST_SKIP() << "no input device";
+    if (!input->open()) GTEST_SKIP() << "cannot open input";
+
+    ASSERT_TRUE(input->start());
+    EXPECT_FALSE(input->start());
+    EXPECT_TRUE(input->stop());
+    EXPECT_TRUE(input->close());
+}
+
+TEST_F(DeviceLifecycleTest, OutputDoubleStartIsRejected)
+{
+    slk::DeviceManager manager;
+    auto output = manager.defaultOutputDevice();
+    if (!output) GTEST_SKIP() << "no output device";
+    if (!output->open()) GTEST_SKIP() << "cannot open output";
+
+    ASSERT_TRUE(output->start());
+    EXPECT_FALSE(output->start());
+    EXPECT_TRUE(output->stop());
+    EXPECT_TRUE(output->close());
+}
+
+TEST_F(DeviceLifecycleTest, InputCloseFromRunningStopsWorker)
+{
+    // close() must call stop() if the worker is running, so the caller
+    // doesn't have to remember the order.
+    slk::DeviceManager manager;
+    auto input = manager.defaultInputDevice();
+    if (!input) GTEST_SKIP() << "no input device";
+    if (!input->open()) GTEST_SKIP() << "cannot open input";
+
+    ASSERT_TRUE(input->start());
+    std::this_thread::sleep_for(std::chrono::milliseconds(30));
+    EXPECT_TRUE(input->close()); // stops + closes; no separate stop() needed
+}
+
+TEST_F(DeviceLifecycleTest, OutputCloseFromRunningStopsWorker)
+{
+    slk::DeviceManager manager;
+    auto output = manager.defaultOutputDevice();
+    if (!output) GTEST_SKIP() << "no output device";
+    if (!output->open()) GTEST_SKIP() << "cannot open output";
+
+    ASSERT_TRUE(output->start());
+    std::this_thread::sleep_for(std::chrono::milliseconds(30));
+    EXPECT_TRUE(output->close());
 }

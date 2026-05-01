@@ -19,6 +19,7 @@
 #include <Windows.h>
 
 #include <cstring>
+#include <thread>
 
 #include "wasapidevice.h"
 
@@ -42,6 +43,10 @@ struct WASAPIOutputDevice::impl_t // NOLINT(cppcoreguidelines-special-member-fun
     // this alongside deviceEvent so it can wake without stop() ever
     // closing a handle that the worker thread is mid-Wait* on.
     HANDLE stopEvent { nullptr };
+
+    // Internal worker thread that runs the render event loop. Owned by
+    // start()/stop() — start() spawns it, stop() joins it.
+    std::thread worker;
 
     impl_t(DeviceInfo&& info) : device(std::move(info))
     {
@@ -68,7 +73,12 @@ WASAPIOutputDevice::WASAPIOutputDevice(DeviceInfo&& info)
     createImpl(std::move(info));
 }
 
-WASAPIOutputDevice::~WASAPIOutputDevice() = default;
+WASAPIOutputDevice::~WASAPIOutputDevice()
+{
+    if (_impl && impl().worker.joinable()) {
+        stop();
+    }
+}
 
 bool WASAPIOutputDevice::open()
 {
@@ -91,6 +101,10 @@ bool WASAPIOutputDevice::open()
 
 bool WASAPIOutputDevice::close()
 {
+    if (impl().worker.joinable()) {
+        stop();
+    }
+
     if (!impl().client) {
         return true;
     }
@@ -103,6 +117,10 @@ bool WASAPIOutputDevice::close()
 
 bool WASAPIOutputDevice::start()
 {
+    if (impl().worker.joinable()) {
+        return false;
+    }
+
     impl().shouldStop = false;
 
     // Auto-reset for the WASAPI render-slot notification, manual-reset for
@@ -125,67 +143,78 @@ bool WASAPIOutputDevice::start()
         return false;
     }
 
-    const auto channels = impl().device.format().channels();
+    impl().worker = std::thread([this]() {
+        const auto channels = impl().device.format().channels();
 
-    HANDLE waitHandles[2] = { impl().deviceEvent, impl().stopEvent };
+        HANDLE waitHandles[2] = { impl().deviceEvent, impl().stopEvent };
 
-    while (!impl().shouldStop) {
-        const auto result = WaitForMultipleObjects(2, waitHandles, FALSE, 2000);
+        while (!impl().shouldStop) {
+            const auto result = WaitForMultipleObjects(2, waitHandles, FALSE, 2000);
 
-        if (result == WAIT_TIMEOUT) {
-            continue;
+            if (result == WAIT_TIMEOUT) {
+                continue;
+            }
+
+            if (result == WAIT_OBJECT_0 + 1) {
+                break;
+            }
+
+            if (result != WAIT_OBJECT_0) {
+                break;
+            }
+
+            UINT32 numFramesPadding { 0 };
+            HRESULT hr = impl().device.audioClient()->GetCurrentPadding(&numFramesPadding);
+            if (FAILED(hr)) {
+                continue;
+            }
+
+            const auto numFramesAvailable = impl().bufferFrameCount - numFramesPadding;
+            if (numFramesAvailable == 0) {
+                continue;
+            }
+
+            BYTE* data { nullptr };
+            hr = impl().client->GetBuffer(numFramesAvailable, &data);
+
+            if (FAILED(hr) || !data) {
+                continue;
+            }
+
+            AudioBuffer<float> tempBuffer(channels, numFramesAvailable);
+
+            if (impl().source) {
+                const size_t maxSamples = static_cast<size_t>(numFramesAvailable) * channels;
+                impl().source->read(std::span<float>(tempBuffer.data().data(), maxSamples), maxSamples);
+            }
+
+            if (impl().processCallback) {
+                impl().processCallback(tempBuffer);
+            }
+
+            const size_t bytesToWrite = static_cast<size_t>(numFramesAvailable) * channels * sizeof(float);
+            std::memcpy(data, tempBuffer.data().data(), bytesToWrite);
+
+            impl().client->ReleaseBuffer(numFramesAvailable, 0);
         }
 
-        // Stop event fired — exit cleanly. The handle is owned by impl_t
-        // and only released after the loop returns, so we never wait on a
-        // handle that another thread is about to close.
-        if (result == WAIT_OBJECT_0 + 1) {
-            break;
-        }
+        impl().device.audioClient()->Stop();
+    });
 
-        if (result != WAIT_OBJECT_0) {
-            break;
-        }
+    return true;
+}
 
-        UINT32 numFramesPadding { 0 };
-        hr = impl().device.audioClient()->GetCurrentPadding(&numFramesPadding);
-        if (FAILED(hr)) {
-            continue;
-        }
+bool WASAPIOutputDevice::stop()
+{
+    impl().shouldStop = true;
 
-        const auto numFramesAvailable = impl().bufferFrameCount - numFramesPadding;
-        if (numFramesAvailable == 0) {
-            continue;
-        }
-
-        BYTE* data { nullptr };
-        hr = impl().client->GetBuffer(numFramesAvailable, &data);
-
-        if (FAILED(hr) || !data) {
-            continue;
-        }
-
-        AudioBuffer<float> tempBuffer(channels, numFramesAvailable);
-
-        if (impl().source) {
-            const size_t maxSamples = static_cast<size_t>(numFramesAvailable) * channels;
-            impl().source->read(std::span<float>(tempBuffer.data().data(), maxSamples), maxSamples);
-        }
-
-        if (impl().processCallback) {
-            impl().processCallback(tempBuffer);
-        }
-
-        const size_t bytesToWrite = static_cast<size_t>(numFramesAvailable) * channels * sizeof(float);
-        std::memcpy(data, tempBuffer.data().data(), bytesToWrite);
-
-        impl().client->ReleaseBuffer(numFramesAvailable, 0);
+    if (impl().stopEvent) {
+        SetEvent(impl().stopEvent);
     }
 
-    // Loop has exited — safe to release the WASAPI clock and the wait
-    // handles. Doing this here (rather than in stop()) guarantees no
-    // other thread is inside WaitForMultipleObjects on these handles.
-    impl().device.audioClient()->Stop();
+    if (impl().worker.joinable()) {
+        impl().worker.join();
+    }
 
     if (impl().deviceEvent) {
         CloseHandle(impl().deviceEvent);
@@ -195,21 +224,6 @@ bool WASAPIOutputDevice::start()
     if (impl().stopEvent) {
         CloseHandle(impl().stopEvent);
         impl().stopEvent = nullptr;
-    }
-
-    return true;
-}
-
-bool WASAPIOutputDevice::stop()
-{
-    // Signal the render loop to exit. The loop owns the handle lifetime
-    // and will close both events itself before start() returns. Callers
-    // are still expected to join the worker thread (e.g. via the future
-    // tracking start()) before destroying or reopening the device.
-    impl().shouldStop = true;
-
-    if (impl().stopEvent) {
-        SetEvent(impl().stopEvent);
     }
 
     return true;

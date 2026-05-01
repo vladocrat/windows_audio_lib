@@ -22,6 +22,9 @@
 #ifdef WIN32
 #include "wasapiinputdevice.h"
 #include "wasapioutputdevice.h"
+#elif defined(__APPLE__)
+#include "coreaudioinputdevice.h"
+#include "coreaudiooutputdevice.h"
 #endif
 
 namespace slk
@@ -49,6 +52,8 @@ std::shared_ptr<InputDevice> DeviceManager::defaultInputDevice(Purpose purpose) 
 
 #ifdef WIN32
     return std::make_shared<WASAPIInputDevice>(std::move(info));
+#elif defined(__APPLE__)
+    return std::make_shared<CoreAudioInputDevice>(std::move(info));
 #else
     return nullptr;
 #endif
@@ -64,6 +69,8 @@ std::shared_ptr<OutputDevice> DeviceManager::defaultOutputDevice(Purpose purpose
 
 #ifdef WIN32
     return std::make_shared<WASAPIOutputDevice>(std::move(info));
+#elif defined(__APPLE__)
+    return std::make_shared<CoreAudioOutputDevice>(std::move(info));
 #else
     return nullptr;
 #endif
@@ -79,6 +86,8 @@ std::shared_ptr<InputDevice> DeviceManager::createInputDevice(const DeviceDescri
 
 #ifdef WIN32
     return std::make_shared<WASAPIInputDevice>(std::move(info));
+#elif defined(__APPLE__)
+    return std::make_shared<CoreAudioInputDevice>(std::move(info));
 #else
     return nullptr;
 #endif
@@ -94,6 +103,8 @@ std::shared_ptr<OutputDevice> DeviceManager::createOutputDevice(const DeviceDesc
 
 #ifdef WIN32
     return std::make_shared<WASAPIOutputDevice>(std::move(info));
+#elif defined(__APPLE__)
+    return std::make_shared<CoreAudioOutputDevice>(std::move(info));
 #else
     return nullptr;
 #endif

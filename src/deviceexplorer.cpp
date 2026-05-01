@@ -19,78 +19,9 @@
 #include "deviceinfo.h"
 
 #ifdef WIN32
-#include <mmdeviceapi.h>
-#include <unordered_map>
-
-namespace
-{
-
-std::wstring getDeviceFriendlyName(IMMDevice* device)
-{
-    if (!device) {
-        return {};
-    }
-
-    IPropertyStore* props { nullptr };
-    if (FAILED(device->OpenPropertyStore(STGM_READ, &props)) || !props) {
-        return {};
-    }
-
-    PROPERTYKEY key;
-    key.fmtid = { 0xa45c254e, 0xdf1c, 0x4efd, { 0x80, 0x20, 0x67, 0xd1, 0x46, 0xa8, 0x50, 0xe0 } };
-    key.pid = 14;
-
-    PROPVARIANT propVariant;
-    PropVariantInit(&propVariant);
-
-    std::wstring deviceName;
-
-    if (SUCCEEDED(props->GetValue(key, &propVariant)) && propVariant.vt == VT_LPWSTR && propVariant.pwszVal) {
-        deviceName = propVariant.pwszVal;
-    }
-
-    PropVariantClear(&propVariant);
-    props->Release();
-
-    return deviceName;
-}
-
-std::wstring getDeviceId(IMMDevice* device)
-{
-    if (!device) {
-        return {};
-    }
-
-    LPWSTR id { nullptr };
-    if (FAILED(device->GetId(&id)) || !id) {
-        return {};
-    }
-
-    std::wstring deviceId(id);
-    CoTaskMemFree(id);
-    return deviceId;
-}
-
-UINT getDeviceStateBitFlag(slk::DeviceState state)
-{
-    static const std::unordered_map<slk::DeviceState, unsigned int> deviceStateMap = {
-        { slk::DeviceState::Active, DEVICE_STATE_ACTIVE },
-        { slk::DeviceState::Disable, DEVICE_STATE_DISABLED },
-        { slk::DeviceState::NotPresent, DEVICE_STATE_NOTPRESENT },
-        { slk::DeviceState::Unplugged, DEVICE_STATE_UNPLUGGED },
-        { slk::DeviceState::All, DEVICE_STATEMASK_ALL }
-    };
-
-    auto it = deviceStateMap.find(state);
-
-    if (it != deviceStateMap.end()) {
-        return it->second;
-    }
-
-    return {};
-}
-
-} // namespace
+#include "windows/deviceexplorer.h"
+#elif defined(__APPLE__)
+#include "macos/deviceexplorer.h"
 #endif
 
 namespace slk
@@ -99,78 +30,24 @@ namespace slk
 struct DeviceExplorer::impl_t
 {
 #ifdef WIN32
-    IMMDeviceEnumerator* enumerator { nullptr };
+    windows::DeviceExplorer explorer;
+#elif defined(__APPLE__)
+    macos::DeviceExplorer explorer;
 #endif
 };
 
 DeviceExplorer::DeviceExplorer()
 {
     createImpl();
-
-#ifdef WIN32
-    CoCreateInstance(__uuidof(MMDeviceEnumerator),
-                     nullptr,
-                     CLSCTX_ALL,
-                     __uuidof(IMMDeviceEnumerator),
-                     reinterpret_cast<void**>(&impl().enumerator));
-#endif
 }
 
-DeviceExplorer::~DeviceExplorer()
-{
-#ifdef WIN32
-    if (!impl().enumerator) {
-        return;
-    }
-
-    impl().enumerator->Release();
-#endif
-}
+DeviceExplorer::~DeviceExplorer() = default;
 
 std::vector<DeviceDescriptor> DeviceExplorer::devices([[maybe_unused]] slk::DeviceType type,
                                                       [[maybe_unused]] slk::DeviceState state) const noexcept
 {
-#ifdef WIN32
-    if (!impl().enumerator) {
-        return {};
-    }
-
-    IMMDeviceCollection* collection { nullptr };
-    if (FAILED(impl().enumerator->EnumAudioEndpoints(
-            static_cast<EDataFlow>(type), getDeviceStateBitFlag(state), &collection))) {
-        return {};
-    }
-
-    if (!collection) {
-        return {};
-    }
-
-    UINT count { 0 };
-    if (FAILED(collection->GetCount(&count))) {
-        collection->Release();
-        return {};
-    }
-
-    std::vector<DeviceDescriptor> result;
-    result.reserve(count);
-
-    for (UINT i = 0; i < count; i++) {
-        IMMDevice* device { nullptr };
-        if (FAILED(collection->Item(i, &device)) || !device) {
-            continue;
-        }
-
-        DeviceDescriptor desc;
-        desc.name = getDeviceFriendlyName(device);
-        desc.id = getDeviceId(device);
-        desc.type = type;
-
-        device->Release();
-        result.push_back(std::move(desc));
-    }
-
-    collection->Release();
-    return result;
+#if defined(WIN32) || defined(__APPLE__)
+    return impl().explorer.devices(type, state);
 #else
     return {};
 #endif
@@ -178,19 +55,8 @@ std::vector<DeviceDescriptor> DeviceExplorer::devices([[maybe_unused]] slk::Devi
 
 DeviceInfo DeviceExplorer::resolveDevice([[maybe_unused]] const DeviceDescriptor& desc) const noexcept
 {
-#ifdef WIN32
-    if (!impl().enumerator) {
-        return {};
-    }
-
-    DeviceInfo info;
-    info.friendlyName = desc.name;
-    info.deviceId = desc.id;
-    info.type = desc.type;
-
-    impl().enumerator->GetDevice(desc.id.c_str(), &info.device);
-
-    return info;
+#if defined(WIN32) || defined(__APPLE__)
+    return impl().explorer.resolveDevice(desc);
 #else
     return {};
 #endif
@@ -199,23 +65,8 @@ DeviceInfo DeviceExplorer::resolveDevice([[maybe_unused]] const DeviceDescriptor
 DeviceInfo DeviceExplorer::resolveDefaultDevice([[maybe_unused]] DeviceType type,
                                                 [[maybe_unused]] Purpose purpose) const noexcept
 {
-#ifdef WIN32
-    if (!impl().enumerator) {
-        return {};
-    }
-
-    DeviceInfo info;
-    info.type = type;
-
-    impl().enumerator->GetDefaultAudioEndpoint(static_cast<EDataFlow>(type), static_cast<ERole>(purpose), &info.device);
-
-    if (info.device) {
-        IMMDevice* raw = info.device.Get();
-        info.friendlyName = getDeviceFriendlyName(raw);
-        info.deviceId = getDeviceId(raw);
-    }
-
-    return info;
+#if defined(WIN32) || defined(__APPLE__)
+    return impl().explorer.resolveDefaultDevice(type, purpose);
 #else
     return {};
 #endif

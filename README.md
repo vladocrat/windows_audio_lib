@@ -1,6 +1,6 @@
 # windows_audio_lib
 
-A C++20 Windows audio library built on WASAPI. It provides device enumeration, low-latency audio capture and playback, WAV file I/O, and a suite of DSP tools (DFT, filtering, windowing, noise generation) under the `slk` namespace.
+A C++20 cross-platform audio library. Backed by **WASAPI** on Windows and **CoreAudio** on macOS. It provides device enumeration, low-latency audio capture and playback, WAV file I/O, and a suite of DSP tools (DFT, filtering, windowing, noise generation) under the `slk` namespace.
 
 ---
 
@@ -8,10 +8,10 @@ A C++20 Windows audio library built on WASAPI. It provides device enumeration, l
 
 | Requirement | Version | Notes |
 |---|---|---|
-| **Windows** | 10 or later | WASAPI is required |
-| **C++ compiler** | MSVC 2019+ or Clang/LLVM with MSVC runtime | C++20 support required |
+| **Platform** | Windows 10+ or macOS 11+ | WASAPI / CoreAudio backends |
+| **C++ compiler** | MSVC 2019+, AppleClang 14+, or Clang/GCC with C++20 | C++20 support required |
 | **CMake** | 3.5+ | Build system |
-| **Windows SDK** | 10.0+ | Required for WASAPI backend |
+| **Platform SDK** | Windows SDK 10.0+ / Xcode CLT | Required for the platform backend |
 
 ---
 
@@ -92,6 +92,24 @@ for (const auto& desc : inputDevices) {
 }
 ```
 
+### Device lifecycle (start/stop)
+
+`start()` is **non-blocking**: each device manages its own worker thread (or
+relies on the OS audio thread on macOS). `start()` returns immediately once the
+audio loop is running; `stop()` signals the worker, joins it, and releases
+handles. Callers do not need to spawn or join threads themselves.
+
+```cpp
+device->open();
+device->start();          // returns immediately; audio is now flowing
+// ... do work ...
+device->stop();           // synchronous: blocks until the worker has exited
+device->close();
+```
+
+`~Device` calls `stop()` if the worker is still running, so destruction is
+safe at any point. `close()` also calls `stop()` first.
+
 ### Input device (recording)
 
 ```cpp
@@ -107,7 +125,7 @@ using namespace slk::dsp::literals;
 DeviceManager manager;
 auto input = manager.defaultInputDevice(Purpose::Multimedia);
 
-// Optional: process each buffer in-place
+// Optional: process each buffer in-place (callback runs on the audio thread)
 dsp::Hertz sampleRate(static_cast<float>(input->format().sampleRate()));
 filter::LowPassFilter<float> lpf(5_kHz, sampleRate);
 input->setProcessCallback([&](AudioBuffer<float>& buf) {
@@ -115,14 +133,9 @@ input->setProcessCallback([&](AudioBuffer<float>& buf) {
 });
 
 input->open();
-
-// start() blocks — run it on a background thread
-std::thread captureThread([&]() { input->start(); });
-
+input->start();           // non-blocking
 // ... do work ...
-
-input->stop();
-captureThread.join();
+input->stop();            // synchronous
 input->close();
 ```
 
@@ -144,9 +157,7 @@ auto output = manager.defaultOutputDevice(Purpose::Multimedia);
 output->setSource(ring);
 
 output->open();
-
-// start() blocks — run it on a background thread
-std::thread playbackThread([&]() { output->start(); });
+output->start();          // non-blocking
 
 // Producer writes samples into the ring buffer:
 //   ring.write(samples.data(), samples.size());
@@ -154,7 +165,6 @@ std::thread playbackThread([&]() { output->start(); });
 // ... do work ...
 
 output->stop();
-playbackThread.join();
 output->close();
 ```
 

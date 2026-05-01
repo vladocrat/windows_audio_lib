@@ -60,14 +60,29 @@ set(PLATFORM_PRIVATE_HEADERS "")
 
 if(WIN32)
     list(APPEND PLATFORM_SOURCES
+        src/windows/deviceexplorer.cpp
         src/windows/wasapidevice.cpp
         src/windows/wasapiinputdevice.cpp
         src/windows/wasapioutputdevice.cpp
     )
     list(APPEND PLATFORM_PRIVATE_HEADERS
+        src/windows/deviceexplorer.h
         src/windows/wasapidevice.h
         src/windows/wasapiinputdevice.h
         src/windows/wasapioutputdevice.h
+    )
+elseif(APPLE)
+    list(APPEND PLATFORM_SOURCES
+        src/macos/deviceexplorer.cpp
+        src/macos/coreaudiodevice.cpp
+        src/macos/coreaudioinputdevice.cpp
+        src/macos/coreaudiooutputdevice.cpp
+    )
+    list(APPEND PLATFORM_PRIVATE_HEADERS
+        src/macos/deviceexplorer.h
+        src/macos/coreaudiodevice.h
+        src/macos/coreaudioinputdevice.h
+        src/macos/coreaudiooutputdevice.h
     )
 endif()
 
@@ -101,9 +116,18 @@ target_include_directories(sound_capture
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/src
         $<$<BOOL:${WIN32}>:${CMAKE_CURRENT_SOURCE_DIR}/src/windows>
+        $<$<BOOL:${APPLE}>:${CMAKE_CURRENT_SOURCE_DIR}/src/macos>
 )
+
+if(APPLE)
+    find_library(CORE_AUDIO_FRAMEWORK CoreAudio REQUIRED)
+    find_library(CORE_FOUNDATION_FRAMEWORK CoreFoundation REQUIRED)
+endif()
 
 target_link_libraries(sound_capture
     PUBLIC
         utils_lib
+    PRIVATE
+        $<$<BOOL:${APPLE}>:${CORE_AUDIO_FRAMEWORK}>
+        $<$<BOOL:${APPLE}>:${CORE_FOUNDATION_FRAMEWORK}>
 )

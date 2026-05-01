@@ -51,13 +51,15 @@ int main()
             std::cout << "buffers: " << n << "  samples per buffer: " << buf.numSamples() << "\n";
     });
 
-    std::thread captureThread([&input]() { input->start(); });
+    if (!input->start()) {
+        std::cerr << "Failed to start input device\n";
+        return 1;
+    }
 
     std::cout << "Recording for 5 seconds...\n";
     std::this_thread::sleep_for(std::chrono::seconds(5));
 
     input->stop();
-    captureThread.join();
     input->close();
 
     std::cout << "Done. Total buffers received: " << bufferCount.load() << "\n";
