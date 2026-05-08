@@ -19,6 +19,7 @@
 #include <slk/audiobuffer.h>
 #include <fstream>
 #include <span>
+#include <cstdint>
 
 namespace slk
 {
