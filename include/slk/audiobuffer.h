@@ -18,6 +18,7 @@
 #include <vector>
 #include <cassert>
 #include <algorithm>
+#include <cstdint>
 
 namespace slk
 {

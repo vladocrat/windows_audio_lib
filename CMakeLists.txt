@@ -130,4 +130,9 @@ target_link_libraries(sound_capture
     PRIVATE
         $<$<BOOL:${APPLE}>:${CORE_AUDIO_FRAMEWORK}>
         $<$<BOOL:${APPLE}>:${CORE_FOUNDATION_FRAMEWORK}>
+        # WASAPI uses KS audio format GUIDs (KSDATAFORMAT_SUBTYPE_*). MSVC
+        # auto-resolves them via #pragma comment(lib) in the SDK headers;
+        # MinGW doesn't, so the link must request ksuser explicitly. No-op
+        # on MSVC.
+        $<$<BOOL:${WIN32}>:ksuser>
 )
